@@ -1,0 +1,14 @@
+os: Visual Studio 2015
+
+platform:
+  - x86
+  - x64
+
+build_script:
+  - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+  - nmake
+  - for /d %%d in (bin\*) do appveyor PushArtifact "%%d\oneyori.exe" -FileName "oneyori_%PLATFORM%.exe"
+
+artifacts:
+  - path: bin
+    name: yori_$(platform)
