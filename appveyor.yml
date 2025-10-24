@@ -4,10 +4,17 @@ platform:
   - x86
   - x64
 
+clone_script:
+  - git config --global core.autocrlf false
+  - git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
+  - git reset --hard %APPVEYOR_REPO_COMMIT%
+
 build_script:
+  - for /f %%v IN ('git describe --tags') do set VERSION=%%v
+  - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x > sh\YoriInit.d\Version.ys1'
+  - 'type sh\YoriInit.d\Version.ys1'
   - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
   - nmake
-  - for /d %%d in (bin\*) do appveyor PushArtifact "%%d\oneyori.exe" -FileName "oneyori_%PLATFORM%.exe"
 
 artifacts:
   - path: bin
