@@ -5,12 +5,25 @@ platform:
   - x64
 
 build_script:
-  - for /f %%v IN ('git describe --tags') do set VERSION=%%v
-  - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x > sh\YoriInit.d\Version.ys1'
-  - 'type sh\YoriInit.d\Version.ys1'
-  - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-  - nmake
+  - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
+  - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
+  - if %PLATFORM:X=x%==x86 link.exe -lib fdi.lib RunTmChk.lib
+  - C:/msys64/usr/bin/wget -nv -O %WINDIR%\bsdtar.exe "https://github.com/aspect-build/bsdtar-prebuilt/releases/download/v3.8.1-fix.1/tar_windows_x86_64.exe"
+  - C:/msys64/usr/bin/wget -nv -O %TEMP%\perc-bin.zip "https://github.com/avih/perc/releases/download/v0.1/perc.v0.1.zip"
+  - C:/msys64/usr/bin/wget -nv -O %TEMP%\yori-bin.zip "https://github.com/malxau/yori/files/15286801/yori-bin--2024-05-02-g106a280-msvc2015.zip"
+  - bsdtar -xf %TEMP%\perc-bin.zip --strip-components=1 -C %WINDIR% *%PLATFORM:~-2%/perc.exe
+  - bsdtar -xf %TEMP%\yori-bin.zip --strip-components=2 -C %WINDIR% */amd64/oneyori.exe */amd64/ymake.exe */amd64/ypm.exe
+  - for /f %%v in ('git describe --tags') do set VERSION=%%v
+  - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x >> sh\YoriInit.d\Typical.ys1'
+  - cd "%APPVEYOR_BUILD_FOLDER%\pkg"
+  - oneyori.exe /c bld.ys1
+  - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
+  - copy out\yori-*.cab "%APPVEYOR_BUILD_FOLDER%"
+  - del out\yori-*-dbg-*.cab
+  - del out\yori-one-*.cab
+  - del out\yori-modular-*.cab
+  - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
 
 artifacts:
-  - path: bin
-    name: yori_$(platform)
+  - path: yori-*.cab
+  - path: ysetup-*.exe

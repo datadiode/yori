@@ -584,7 +584,7 @@ SetupInstallSelectedWithOptions(
     //  Obtain URLs for the specified packages.
     //
 
-    if (SetupFindLocalPkgPath(&LocalPath)) {
+    if (FindResource(NULL, _T("pkglist.ini"), RT_RCDATA) == NULL && SetupFindLocalPkgPath(&LocalPath)) {
         CustomSource = &LocalPath;
     }
     YoriLibConstantString(&StatusText, _T("Obtaining package URLs..."));

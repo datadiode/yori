@@ -936,6 +936,108 @@ Exit:
 }
 
 /**
+ Dump an RCDATA resource identified through an Url to a local file.
+ This function is only used when pkglist.ini is embedded as RCDATA.
+
+ @param Url whose last part identifies the RCDATA resource.
+
+ @param TargetName If specified, the local location to store the file.
+        If not specified, the current executable name is used.
+
+ @return An update error code indicating success or appropriate error.
+ */
+YORI_LIB_UPDATE_ERROR
+YoriLibUpdateBinaryFromRCData(
+    __in PCYORI_STRING Url,
+    __in_opt PCYORI_STRING TargetName
+)
+{
+    YORI_STRING TempName;
+    YORI_STRING TempPath;
+    YORI_STRING PrefixString;
+    HANDLE hTempFile = INVALID_HANDLE_VALUE;
+    UCHAR NewBinaryData[2];
+    DWORD ActualBinarySize;
+    YORI_LIB_UPDATE_ERROR Return = YoriLibUpdErrorSuccess;
+    LPVOID Ptr = NULL;
+    DWORD Len = 0;
+
+    HRSRC hRsrc = FindResource(NULL, _tcsrchr(Url->StartOfString, '/') + 1, RT_RCDATA);
+    if (hRsrc != NULL) {
+        HGLOBAL hRsrcMem = LoadResource(NULL, hRsrc);
+        if (hRsrcMem != NULL) {
+            Len = SizeofResource(NULL, hRsrc);
+            Ptr = LockResource(hRsrcMem);
+        }
+    }
+
+    YoriLibInitEmptyString(&TempName);
+    YoriLibInitEmptyString(&TempPath);
+
+    if (Ptr == NULL) {
+        Return = YoriLibUpdErrorInetContents;
+        goto Exit;
+    }
+
+    //
+    //  Create a temporary file to hold the contents.
+    //
+
+    if (!YoriLibGetTempPath(&TempPath, 0)) {
+        Return = YoriLibUpdErrorFileWrite;
+        goto Exit;
+    }
+
+    YoriLibConstantString(&PrefixString, _T("UPD"));
+    if (!YoriLibGetTempFileName(&TempPath, &PrefixString, &hTempFile, &TempName) ||
+        !WriteFile(hTempFile, Ptr, Len, &ActualBinarySize, NULL) ||
+        ActualBinarySize != Len) {
+        Return = YoriLibUpdErrorFileWrite;
+        goto Exit;
+    }
+
+    //
+    //  For validation, if the request is to modify the current executable
+    //  check that the result is an executable.
+    //
+
+    if (TargetName == NULL) {
+        SetFilePointer(hTempFile, 0, NULL, FILE_BEGIN);
+        if (!ReadFile(hTempFile, NewBinaryData, 2, &ActualBinarySize, NULL) ||
+            ActualBinarySize != 2 ||
+            NewBinaryData[0] != 'M' ||
+            NewBinaryData[1] != 'Z' ) {
+
+            Return = YoriLibUpdErrorInetContents;
+            goto Exit;
+        }
+    }
+
+    //
+    //  Now update the binary with the local file.
+    //
+
+    CloseHandle(hTempFile);
+    hTempFile = INVALID_HANDLE_VALUE;
+
+    if (!YoriLibUpdateBinaryFromFile(TargetName, &TempName)) {
+        Return = YoriLibUpdErrorFileReplace;
+    }
+
+Exit:
+
+    if (hTempFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(hTempFile);
+        DeleteFile(TempName.StartOfString);
+    }
+
+    YoriLibFreeStringContents(&TempPath);
+    YoriLibFreeStringContents(&TempName);
+
+    return Return;
+}
+
+/**
  Download a file from the internet and store it in a local location.
 
  @param Url The Url to download the file from.
@@ -958,10 +1060,23 @@ YoriLibUpdateBinaryFromUrl(
     __in_opt PSYSTEMTIME IfModifiedSince
     )
 {
+    //
+    // An example of what to expect:
+    // http://www.malsmith.net/download/?obj=yori/2.50/pkglist.ini
+    //
+
+    static const TCHAR DownloadPage[] = _T("http://www.malsmith.net/download/");
+
     YORI_WININET_FUNCTIONS StubWinInet;
 
     ASSERT(YoriLibIsStringNullTerminated(Url));
     ASSERT(YoriLibIsStringNullTerminated(Agent));
+
+    if (FindResource(NULL, _T("pkglist.ini"), RT_RCDATA) != NULL &&
+        _tcsnicmp(Url->StartOfString, DownloadPage, sizeof DownloadPage/sizeof DownloadPage[0] - 1) == 0) {
+
+        return YoriLibUpdateBinaryFromRCData(Url, TargetName);
+    }
 
     //
     //  Dynamically load WinInet.  This means we don't have to resolve
