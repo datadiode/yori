@@ -24,6 +24,13 @@ build_script:
   - del out\yori-modular-*.cab
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
 
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: Ff432aLyTjRB02PAo9YoH+iRttges/GD2mpfggEdsZ+oDFoeYYzu3Z52IzsH+E1y
+  on:
+    APPVEYOR_REPO_TAG: true
+
 artifacts:
   - path: yori-*.cab
   - path: ysetup-*.exe
