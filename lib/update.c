@@ -31,8 +31,7 @@
 /**
  A table of constant error strings corresponding to an error number.
  */
-LPCTSTR
-YoriLibUpdErrorStrings[] = {
+const LPCTSTR YoriLibUpdErrorStrings[] = {
     _T("Success"),
     _T("Could not initialize WinInet"),
     _T("Could not connect to server"),
@@ -191,7 +190,7 @@ YoriLibUpdateBinaryFromFile(
 /**
  An array of human readable day names in HTTP format.
  */
-LPCSTR YoriLibDayNames[] = {
+const LPCSTR YoriLibDayNames[] = {
     "Sun",
     "Mon",
     "Tue",
@@ -203,7 +202,7 @@ LPCSTR YoriLibDayNames[] = {
 /**
  An array of human readable month names in HTTP format.
  */
-LPCSTR YoriLibMonthNames[] = {
+const LPCSTR YoriLibMonthNames[] = {
     "Jan",
     "Feb",
     "Mar",

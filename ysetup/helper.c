@@ -55,16 +55,6 @@ CONST CHAR SetupNoLongFileNamesWarning2[] = "Volume does not support long file n
                                             "Setup will continue without these components.";
 
 /**
- A list of subdirectories from the application to check for packages.
- */
-CONST LPTSTR SetupLocalPathsToCheck[] = {
-    _T("pkg"),
-    _T("yori"),
-    _T("ypm"),
-    _T("ysetup")
-};
-
-/**
  Return a constant string to display to the user if a required DLL is not
  found.  The message indicates which DLLs are missing.
 
@@ -94,89 +84,6 @@ SetupGetNoLongFileNamesMessage(
     }
 
     return SetupNoLongFileNamesWarning1;
-}
-
-/**
- See if there are local packages for installation without using the internet.
- This probes subdirectories of the application's directory.  Subdirectories
- are used to avoid squatting in the downloads folder, ie., not allowing a
- website drive-by to populate the downloads folder with a file that would
- manipulate the installer.
-
- @param LocalPath On successful completion, populated with a referenced string
-        describing the local package location to use.
-
- @return TRUE to indicate that a local package location has been found which
-         should be used, and FALSE to indicate default package locations
-         should be used instead.
- */
-__success(return)
-BOOL
-SetupFindLocalPkgPath(
-    __out PYORI_STRING LocalPath
-    )
-{
-    DWORD Index;
-    int Result;
-    YORI_STRING RelativePathToProbe;
-    YORI_STRING FullPathToProbe;
-
-    YoriLibInitEmptyString(&RelativePathToProbe);
-    YoriLibInitEmptyString(&FullPathToProbe);
-    for (Index = 0; Index < sizeof(SetupLocalPathsToCheck)/sizeof(SetupLocalPathsToCheck[0]); Index++) {
-
-        //
-        //  Create a path using the specification for the directory of the
-        //  running process
-        //
-
-        Result = YoriLibYPrintf(&RelativePathToProbe, _T("~APPDIR\\%s\\pkglist.ini"), SetupLocalPathsToCheck[Index]);
-        if (Result == -1) {
-            YoriLibFreeStringContents(&RelativePathToProbe);
-            YoriLibFreeStringContents(&FullPathToProbe);
-            return FALSE;
-        }
-
-        //
-        //  Turn that into a full path for the benefit of Win32
-        //
-
-        if (!YoriLibUserStringToSingleFilePath(&RelativePathToProbe, TRUE, &FullPathToProbe)) {
-            YoriLibFreeStringContents(&RelativePathToProbe);
-            YoriLibInitEmptyString(&FullPathToProbe);
-            return FALSE;
-        }
-
-        //
-        //  See if it exists
-        //
-
-        if (GetFileAttributes(FullPathToProbe.StartOfString) != (DWORD)-1) {
-            YoriLibFreeStringContents(&RelativePathToProbe);
-
-            //
-            //  Remove pkglist.ini.  Note that sizeof includes the NULL so
-            //  this removes the trailing slash too
-            //
-
-            FullPathToProbe.LengthInChars -= sizeof("pkglist.ini");
-            FullPathToProbe.StartOfString[FullPathToProbe.LengthInChars] = '\0';
-            YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("Found local packages at %y\n"), &FullPathToProbe);
-            memcpy(LocalPath, &FullPathToProbe, sizeof(YORI_STRING));
-            return TRUE;
-        }
-
-        YoriLibFreeStringContents(&FullPathToProbe);
-
-    }
-
-    //
-    //  No local path found, try the internet
-    //
-
-    YoriLibFreeStringContents(&RelativePathToProbe);
-    YoriLibFreeStringContents(&FullPathToProbe);
-    return FALSE;
 }
 
 /**
@@ -584,9 +491,6 @@ SetupInstallSelectedWithOptions(
     //  Obtain URLs for the specified packages.
     //
 
-    if (FindResource(NULL, _T("pkglist.ini"), RT_RCDATA) == NULL && SetupFindLocalPkgPath(&LocalPath)) {
-        CustomSource = &LocalPath;
-    }
     YoriLibConstantString(&StatusText, _T("Obtaining package URLs..."));
     SetStdHandle(STD_OUTPUT_HANDLE, OriginalStdOut);
     SetStdHandle(STD_ERROR_HANDLE, OriginalStdErr);
