@@ -473,14 +473,7 @@ YoriPkgCollectSourcesFromIniWithDefaults(
         if (DefaultsUsed != NULL) {
             *DefaultsUsed = TRUE;
         }
-#if YORI_BUILD_ID
-        YoriLibConstantString(&DummySource, _T("http://www.malsmith.net/testing"));
-        Source = YoriPkgAllocateRemoteSource(&DummySource);
-        if (Source != NULL) {
-            YoriLibAppendList(SourcesList, &Source->SourceList);
-        }
-#endif
-        YoriLibConstantString(&DummySource, _T("http://www.malsmith.net"));
+        YoriLibConstantString(&DummySource, _T("https://github.com/datadiode/yori/releases/latest/download"));
         Source = YoriPkgAllocateRemoteSource(&DummySource);
         if (Source != NULL) {
             YoriLibAppendList(SourcesList, &Source->SourceList);

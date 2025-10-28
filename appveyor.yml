@@ -17,6 +17,7 @@ build_script:
   - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x >> sh\YoriInit.d\Typical.ys1'
   - cd "%APPVEYOR_BUILD_FOLDER%\pkg"
   - oneyori.exe /c bld.ys1
+  - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%PLATFORM:X=x%.exe"
   - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
   - copy out\yori-*.cab "%APPVEYOR_BUILD_FOLDER%"
   - del out\yori-*-dbg-*.cab out\yori-one-*.cab out\yori-modular-*.cab
@@ -30,5 +31,6 @@ deploy:
     APPVEYOR_REPO_TAG: true
 
 artifacts:
+  - path: pkg\out\pkglist.ini
   - path: yori-*.cab
   - path: ysetup-*.exe

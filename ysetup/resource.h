@@ -100,6 +100,11 @@
 #define SETUPDIALOG 100
 
 /**
+ The identifier for an empty dialog box.
+ */
+#define EMPTYDIALOG 101
+
+/**
  The edit control in which the user can enter the install directory.
  */
 #define IDC_INSTALLDIR 201

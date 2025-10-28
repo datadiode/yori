@@ -349,6 +349,45 @@ SetupGuiGetDlgItemText(
 }
 
 /**
+ A DialogProc which closes the dialog box right away without making it visible.
+ Intended to help prevent window messages from remaining stuck in the queue.
+
+ @param hDlg Specifies the hWnd of the dialog box.
+
+ @param uMsg Specifies the window message received by the dialog box.
+
+ @param wParam Specifies the first parameter to the window message.
+
+ @param lParam Specifies the second parameter to the window message.
+
+ @return FALSE.
+ */
+BOOL CALLBACK
+SetupGuiSilentProc(
+    __in HWND hDlg,
+    __in UINT uMsg,
+    __in WPARAM wParam,
+    __in LPARAM lParam
+)
+{
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        DllUser32.pSendMessageW(hDlg, WM_CLOSE, 0, 0);
+        break;
+    case WM_WINDOWPOSCHANGING:
+        ((LPWINDOWPOS)lParam)->flags &= ~(SWP_SHOWWINDOW | SWP_HIDEWINDOW);
+        ((LPWINDOWPOS)lParam)->flags |= SWP_NOACTIVATE;
+        break;
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDCANCEL) {
+            DllYsetupGui.pEndDialog(hDlg, 0);
+        }
+        break;
+    }
+    return FALSE;
+}
+
+/**
  SetDlgItemText implemented as a SendMessage wrapper to avoid additional
  imports.
 
@@ -368,8 +407,20 @@ SetupGuiSetDlgItemText(
     )
 {
     HWND hWndDlg;
+    BOOL Result;
     hWndDlg = DllYsetupGui.pGetDlgItem(hWnd, DlgId);
-    return (DWORD)DllUser32.pSendMessageW(hWndDlg, WM_SETTEXT, 0, (DWORD_PTR)String);
+    Result = (BOOL)DllUser32.pSendMessageW(hWndDlg, WM_SETTEXT, 0, (DWORD_PTR)String);
+
+    if (DlgId == IDC_STATUS) {
+
+        //
+        //  Special handling for status updates:
+        //  Give the GUI thread a chance to process the pending window messages.
+        //
+
+        DllYsetupGui.pDialogBoxParamW(NULL, MAKEINTRESOURCE(EMPTYDIALOG), NULL, (DLGPROC)SetupGuiSilentProc, 0);
+    }
+    return Result;
 }
 
 /**
