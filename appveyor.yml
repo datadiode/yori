@@ -5,6 +5,16 @@ platform:
   - x64
 
 build_script:
+  - ps: |
+      $headers = @{ "Authorization" = "Bearer $Env:BearerToken"; "Content-type" = "application/json" }
+      $project = Invoke-RestMethod -Method Get -Uri "$Env:APPVEYOR_URL/api/projects/$Env:APPVEYOR_ACCOUNT_NAME/$Env:APPVEYOR_PROJECT_SLUG" -Headers $headers
+      for ($i = 0; ($i -lt $project.build.jobs.length) -and ($Env:APPVEYOR_JOB_ID -ne $project.build.jobs[$i].jobId); $i++) {
+        Write-host "Probing job $i for artifact pkglist.ini"
+        $jobId = $project.build.jobs[$i].jobId
+        New-Item ".\pkg\out" -ItemType Directory -ea 0
+        Invoke-RestMethod -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
+      }
+  - if exist "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini" type "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini"
   - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
   - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
   - if %PLATFORM:X=x%==x86 link.exe -lib fdi.lib RunTmChk.lib
@@ -22,6 +32,7 @@ build_script:
   - copy out\yori-*.cab "%APPVEYOR_BUILD_FOLDER%"
   - del out\yori-*-dbg-*.cab out\yori-one-*.cab out\yori-modular-*.cab
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
+  - if exist "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini" type "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini"
 
 deploy:
   provider: GitHub
