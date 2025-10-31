@@ -1,0 +1,8 @@
+setlocal
+if intcmp "%1%^<520" ; set SUBSYSVER=3.10 ; set SUBSYSVER=5.2
+set FILELIST=%2%
+if strcmp ".lst*=%FILELIST%" ;; goto ready
+set FILELIST=`cut -f 0 -d "|" %FILELIST%`
+:ready
+for %%f in (%FILELIST%) do petool -os %%f %SUBSYSVER%
+endlocal
