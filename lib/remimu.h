@@ -250,7 +250,11 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     RegexToken token;
 
+    int j;
     int16_t k = 0;
+    int16_t k2;
+    int16_t k3;
+    uint64_t n = 0;
 
     int paren_count = 0;
 
@@ -462,7 +466,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                         m[7] |= 0x07FF; // p-z
                     }
 
-                    for (int j = 0; j < 16; j++)
+                    for (j = 0; j < 16; j++)
                         token.mask[j] |= is_upper ? ~m[j] : m[j];
 
                     token.kind = REMIMU_KIND_NORMAL;
@@ -686,7 +690,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                         m[7] |= 0x07FF; // p-z
                     }
 
-                    for (int j = 0; j < 16; j++)
+                    for (j = 0; j < 16; j++)
                         token.mask[j] |= is_upper ? ~m[j] : m[j];
 
                     char_class_mem = -1; // range shorthands can't be part of a range
@@ -794,13 +798,10 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     // copy quantifiers from )s to (s (so (s know whether they're optional)
     // also take the opportunity to smuggle "quantified group index" into the mask field for the )
-    uint64_t n = 0;
-    for (int16_t k2 = 0; k2 < k; k2++)
+    for (k2 = 0; k2 < k; k2++)
     {
         if (tokens[k2].kind == REMIMU_KIND_CLOSE)
         {
-            int16_t k3;
-
             tokens[k2].mask[0] = (uint16_t)(n++);
 
             k3 = k2 + tokens[k2].pair_offset;
