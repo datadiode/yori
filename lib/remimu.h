@@ -743,19 +743,21 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                 }
                 else
                 {
+                    uint8_t rhs;
+                    uint8_t j;
                     if (char_class_mem == -1)
                     {
                         REMIMU_LOG_ERROR("character class range is broken");
                         return -1; // probably tried to use a character class shorthand as part of a range
                     }
-                    uint8_t rhs = esc_c ? esc_c : (uint8_t)c;
+                    rhs = esc_c ? esc_c : (uint8_t)c;
                     if (rhs < (uint8_t)char_class_mem)
                     {
                         REMIMU_LOG_ERROR("character class range is misordered");
                         return -1; // range is in wrong order
                     }
                     //printf("enabling char class from %d to %d...\n", char_class_mem, c);
-                    for (uint8_t j = rhs; j > (uint8_t)char_class_mem; j--)
+                    for (j = rhs; j > (uint8_t)char_class_mem; j--)
                         _REGEX_SET_MASK(j);
                     state = STATE_CC_NORMAL;
                     char_class_mem = -1;
@@ -924,6 +926,20 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
     uint32_t k = 0;
     uint16_t caps = 0;
 
+    RegexMatcherState rewind_stack[stack_size_max];
+    uint16_t stack_n = 0;
+
+    uint64_t i = start_i;
+
+    uint64_t range_min = 0;
+    uint64_t range_max = 0;
+    uint8_t just_rewinded = 0;
+
+    // used in boundary anchor checker
+    uint64_t w_mask[16];
+
+    int limit = REMIMU_ITERATION_LIMIT;
+
     if (cap_slots > aux_stats_size)
         cap_slots = aux_stats_size;
 
@@ -956,30 +972,22 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
     tokens_len = k;
 
-    RegexMatcherState rewind_stack[stack_size_max];
-    uint16_t stack_n = 0;
-
-    uint64_t i = start_i;
-
-    uint64_t range_min = 0;
-    uint64_t range_max = 0;
-    uint8_t just_rewinded = 0;
-
     #define _P_TEXT_HIGHLIGHTED() do { \
+        uint64_t q; \
         IF_VERBOSE(printf("\033[91m"); \
-        for (uint64_t q = 0; q < i; q++) printf("%c", text[q]); \
+        for (q = 0; q < i; q++) printf("%c", text[q]); \
         printf("\033[0m"); \
-        for (uint64_t q = i; text[q] != 0; q++) printf("%c", text[q]); \
+        for (q = i; text[q] != 0; q++) printf("%c", text[q]); \
         printf("\n");) \
     } while (0)
 
     #define _REWIND_DO_SAVE_RAW(K, ISDUMMY) do { \
+        RegexMatcherState s; \
         if (stack_n >= stack_size_max) \
         { \
             REMIMU_LOG_ERROR("out of backtracking room. returning"); \
             return -2; \
         } \
-        RegexMatcherState s; \
         memset(&s, 0, sizeof(RegexMatcherState)); \
         s.i = i; \
         s.k = (K); \
@@ -1022,8 +1030,6 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
     } while (0)
     // the -= 1 is because of the k++ in the for loop
 
-    // used in boundary anchor checker
-    uint64_t w_mask[16];
     memset(w_mask, 0, sizeof(w_mask));
     w_mask[3] = 0x03FF;
     w_mask[4] = 0xFFFE;
@@ -1032,7 +1038,6 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
     w_mask[7] = 0x07FF;
     #define _REGEX_CHECK_IS_W(byte) (!!(w_mask[((uint8_t)byte)>>4] & ((uint64_t)1 << ((uint8_t)byte & 0xF))))
 
-    int limit = REMIMU_ITERATION_LIMIT;
     for (k = 0; k < tokens_len; k++)
     {
         if (REMIMU_ITERATION_LIMIT)
@@ -1168,7 +1173,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
                     IF_VERBOSE(printf("--- FOUND ALTERNATION for paren at k %zd at k %d\n", orig_k, k);)
 
-                    k_diff = k - orig_k;
+                    k_diff = (ptrdiff_t)(k - orig_k);
                     range_min = k_diff + 1;
 
                     IF_VERBOSE(puts("(saving in paren after rewinding and looking for next regex token to check)");)
@@ -1192,6 +1197,8 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                     IF_VERBOSE(puts("closer test.....");)
                     if (!just_rewinded)
                     {
+                        uint8_t force_zero;
+
                         uint32_t prev = q_group_stack[tokens[k].mask[0]];
 
                         IF_VERBOSE(printf("qrqrqrqrqrqrqrq-------      k %d, gs %d, gaz %d, i %zd, tklo %d, rmin %zd, tkhi %d, rmax %zd, prev %d, sn %d\n", k, q_group_state[tokens[k].mask[0]], q_group_accepts_zero[tokens[k].mask[0]], i, tokens[k].count_lo, range_min, tokens[k].count_hi, range_max, prev, stack_n);)
@@ -1225,7 +1232,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
                         // fallback case to detect zero-length matches when we backtracked into the inside of this group
                         // after an attempted parse of a second copy of itself
-                        uint8_t force_zero = 0;
+                        force_zero = 0;
                         if (prev != 0 && rewind_stack[prev].i > i)
                         {
                             // find matching open paren
@@ -1320,11 +1327,13 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                             // otherwise continue on to past the group
                             else
                             {
+                                uint16_t cap_index;
+
                                 IF_VERBOSE(puts("continuing past greedy group");)
                                 q_group_state[tokens[k].mask[0]] = 0;
 
                                 // for captures
-                                uint16_t cap_index = q_group_cap_index[tokens[k].mask[0]];
+                                cap_index = q_group_cap_index[tokens[k].mask[0]];
                                 if (cap_index != 0xFFFF)
                                     _REWIND_DO_SAVE_DUMMY(k);
                             }
@@ -1434,9 +1443,10 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
     if (caps != 0)
     {
+        size_t n;
         //printf("stack_n: %d\n", stack_n);
         //fflush(stdout);
-        for (size_t n = 0; n < stack_n; n++)
+        for (n = 0; n < stack_n; n++)
         {
             RegexMatcherState s = rewind_stack[n];
             int kind = tokens[s.k].kind;
@@ -1452,7 +1462,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
             }
         }
         // re-deinitialize capture positions that have no associated capture span
-        for (size_t n = 0; n < caps; n++)
+        for (n = 0; n < caps; n++)
         {
             if (cap_span[n] == -1)
                 cap_pos[n] = -1;
@@ -1487,14 +1497,16 @@ REMIMU_FUNC_VISIBILITY void print_regex_tokens(RegexToken * tokens)
         "POSSESS",
         "LAZY",
     };
-    for (int k = 0;; k++)
+    int k;
+    for (k = 0;; k++)
     {
+        int c;
         int c_old;
 
         printf("%s\t%s\t", kind_to_str[tokens[k].kind], mode_to_str[tokens[k].mode]);
 
         c_old = -1;
-        for (int c = 0; c < (tokens[k].kind ? 0 : 256); c++)
+        for (c = 0; c < (tokens[k].kind ? 0 : 256); c++)
         {
             #define _PRINT_C_SMART(c) { \
                 if (c >= 0x20 && c <= 0x7E) \
