@@ -83,7 +83,7 @@ CFLAGS_NOUNICODE=$(CFLAGS_NOUNICODE) -Gy -O1sb1
 #
 
 CFLAGS_NOUNICODE=$(CFLAGS_NOUNICODE) -DMINICRT
-LDFLAGS_CORE=$(LDFLAGS_CORE) -nodefaultlib
+LDFLAGS_CORE=$(LDFLAGS_CORE) -nodefaultlib -alternatename:__alloca_probe_16=__alloca_probe
 YORILIBS=$(YORILIBS) ..\crt\yoricrt.lib ..\lib\yorilib.lib
 YORIDLG=..\libdlg\yoridlg.lib
 YORIPKG=..\pkglib\yoripkg.lib
