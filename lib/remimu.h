@@ -291,7 +291,8 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     #define _REGEX_SET_MASK(byte) do { token.mask[((uint8_t)(byte))>>4] |= 1 << ((uint8_t)(byte) & 0xF); } while (0)
     #define _REGEX_SET_MASK_ALL() do { \
-        for (int n = 0; n < 16; n++) \
+        int n; \
+        for (n = 0; n < 16; n++) \
             token.mask[n] = 0xFFFF; \
     } while (0)
 
