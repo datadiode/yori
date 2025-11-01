@@ -269,7 +269,8 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
     _REGEX_CLEAR_TOKEN();
 
     #define _REGEX_DO_INVERT() do { \
-        for (int n = 0; n < 16; n++) \
+        int n; \
+        for (n = 0; n < 16; n++) \
             token.mask[n] = ~token.mask[n]; \
         token.mode &= ~REMIMU_MODE_INVERTED; \
     } while (0)
