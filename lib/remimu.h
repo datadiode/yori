@@ -326,8 +326,9 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                     state = STATE_NORMAL;
                 else
                 {
+                    uint32_t val;
                     i += 1;
-                    uint32_t val = 0;
+                    val = 0;
                     while (pattern[i] >= '0' && pattern[i] <= '9')
                     {
                         val *= 10;
@@ -415,9 +416,9 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                     _REGEX_SET_MASK('\f');
                 else if (c == 'x')
                 {
+                    uint8_t n0, n1;
                     if (pattern[i+1] == 0 || pattern[i+2] == 0)
                         return -1; // too-short hex pattern
-                    uint8_t n0, n1;
                     if (remimu_nibble_hex_to_bin(pattern[i+1], &n0))
                         return -1; // invalid hex
                     if (remimu_nibble_hex_to_bin(pattern[i+2], &n1))
@@ -630,9 +631,9 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                     esc_c = '\f';
                 else if (c == 'x')
                 {
+                    uint8_t n0, n1;
                     if (pattern[i+1] == 0 || pattern[i+2] == 0)
                         return -1; // too-short hex pattern
-                    uint8_t n0, n1;
                     if (remimu_nibble_hex_to_bin(pattern[i+1], &n0))
                         return -1; // invalid hex
                     if (remimu_nibble_hex_to_bin(pattern[i+2], &n1))
@@ -792,9 +793,11 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
     {
         if (tokens[k2].kind == REMIMU_KIND_CLOSE)
         {
+            int16_t k3;
+
             tokens[k2].mask[0] = (uint16_t)(n++);
 
-            int16_t k3 = k2 + tokens[k2].pair_offset;
+            k3 = k2 + tokens[k2].pair_offset;
             tokens[k3].count_lo = tokens[k2].count_lo;
             tokens[k3].count_hi = tokens[k2].count_hi;
             tokens[k3].mask[0] = (uint16_t)(n++);
@@ -1100,10 +1103,13 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                 }
                 else
                 {
+                    uint64_t orig_k;
+                    ptrdiff_t k_diff;
+
                     IF_VERBOSE(printf("rewinded into OPEN. i is %zd, depth is %d\n", i, stack_n);)
                     just_rewinded = 0;
 
-                    uint64_t orig_k = k;
+                    orig_k = k;
 
                     IF_VERBOSE(printf("--- trying to try another alternation, start k is %d, rmin is %zu\n", k, range_min);)
 
@@ -1152,7 +1158,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
                     IF_VERBOSE(printf("--- FOUND ALTERNATION for paren at k %zd at k %d\n", orig_k, k);)
 
-                    ptrdiff_t k_diff = k - orig_k;
+                    k_diff = k - orig_k;
                     range_min = k_diff + 1;
 
                     IF_VERBOSE(puts("(saving in paren after rewinding and looking for next regex token to check)");)
@@ -1473,9 +1479,11 @@ REMIMU_FUNC_VISIBILITY void print_regex_tokens(RegexToken * tokens)
     };
     for (int k = 0;; k++)
     {
+        int c_old;
+
         printf("%s\t%s\t", kind_to_str[tokens[k].kind], mode_to_str[tokens[k].mode]);
 
-        int c_old = -1;
+        c_old = -1;
         for (int c = 0; c < (tokens[k].kind ? 0 : 256); c++)
         {
             #define _PRINT_C_SMART(c) { \
