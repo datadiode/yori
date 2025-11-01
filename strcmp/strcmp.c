@@ -44,7 +44,7 @@ CHAR strStrCmpHelpText[] =
         "   ==             Strings match exactly\n"
         "   !=             Strings do not match\n"
         "   *=             First string is contained in the second string\n"
-        "   =~             First string matches wildcard pattern given in second string\n";
+        "   =~             First string matches regex given in second string\n";
 
 /**
  Display usage text to the user.
@@ -76,9 +76,9 @@ StrCmpHelp(VOID)
 #define STRCMP_OPERATOR_SUBSTRING   2
 
 /**
- An array index for an operator indicating a wildcard match.
+ An array index for an operator indicating a regex match.
  */
-#define STRCMP_OPERATOR_WC_MATCH    3
+#define STRCMP_OPERATOR_REGEX_MATCH 3
 
 /**
  An array index beyond the array, ie., the number of elements in the array.
@@ -174,7 +174,7 @@ ENTRYPOINT(
     YoriLibConstantString(&OperatorMatches[STRCMP_OPERATOR_EXACT_MATCH], _T("=="));
     YoriLibConstantString(&OperatorMatches[STRCMP_OPERATOR_NO_MATCH], _T("!="));
     YoriLibConstantString(&OperatorMatches[STRCMP_OPERATOR_SUBSTRING], _T("*="));
-    YoriLibConstantString(&OperatorMatches[STRCMP_OPERATOR_WC_MATCH], _T("=~"));
+    YoriLibConstantString(&OperatorMatches[STRCMP_OPERATOR_REGEX_MATCH], _T("=~"));
 
     MatchingOperator = YoriLibFindFirstMatchSubstr(&Expression, sizeof(OperatorMatches)/sizeof(OperatorMatches[0]), OperatorMatches, &OperatorIndex);
     if (MatchingOperator == NULL) {
@@ -245,16 +245,16 @@ ENTRYPOINT(
             }
         }
 
-    } else if (MatchingOperator == &OperatorMatches[STRCMP_OPERATOR_WC_MATCH]) {
+    } else if (MatchingOperator == &OperatorMatches[STRCMP_OPERATOR_REGEX_MATCH]) {
 
         if (MatchInsensitive) {
-            if (YoriLibWildcardMatchIns(&SecondPart, 0, &FirstPart, 0) == 0) {
+            if (YoriLibRegexMatchIns(&FirstPart, &SecondPart)) {
                 Result = EXIT_SUCCESS;
             } else {
                 Result = EXIT_FAILURE;
             }
         } else {
-            if (YoriLibWildcardMatch(&SecondPart, 0, &FirstPart, 0) == 0) {
+            if (YoriLibRegexMatch(&FirstPart, &SecondPart)) {
                 Result = EXIT_SUCCESS;
             } else {
                 Result = EXIT_FAILURE;

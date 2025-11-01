@@ -10804,6 +10804,18 @@ TILE_WINDOWS(HWND, UINT, RECT*, UINT, HWND*);
 typedef TILE_WINDOWS *PTILE_WINDOWS;
 
 /**
+ A prototype for the CharLowerBuffW function.
+ */
+typedef
+DWORD WINAPI
+CHAR_LOWER_BUFFW(LPWSTR, DWORD);
+
+/**
+ A prototype for a pointer to the CharLowerBuffW function.
+ */
+typedef CHAR_LOWER_BUFFW *PCHAR_LOWER_BUFFW;
+
+/**
  A structure containing optional function pointers to user32.dll exported
  functions which programs can operate without having hard dependencies on.
  */
@@ -11047,6 +11059,11 @@ typedef struct _YORI_USER32_FUNCTIONS {
      If it's available on the current system, a pointer to TileWindows.
      */
     PTILE_WINDOWS pTileWindows;
+
+    /**
+     If it's available on the current system, a pointer to CharLowerBuffW.
+     */
+    PCHAR_LOWER_BUFFW pCharLowerBuffW;
 
 } YORI_USER32_FUNCTIONS, *PYORI_USER32_FUNCTIONS;
 

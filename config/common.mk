@@ -83,7 +83,7 @@ CFLAGS_NOUNICODE=$(CFLAGS_NOUNICODE) -Gy -O1sb1
 #
 
 CFLAGS_NOUNICODE=$(CFLAGS_NOUNICODE) -DMINICRT
-LDFLAGS_CORE=$(LDFLAGS_CORE) -nodefaultlib
+LDFLAGS_CORE=$(LDFLAGS_CORE) -nodefaultlib -alternatename:__alloca_probe_16=__alloca_probe
 YORILIBS=$(YORILIBS) ..\crt\yoricrt.lib ..\lib\yorilib.lib
 YORIDLG=..\libdlg\yoridlg.lib
 YORIPKG=..\pkglib\yoripkg.lib
@@ -176,11 +176,13 @@ MACHINE=IX86
 MACHINE=X86
 !ENDIF # 80x86
 ARCH=win32
+EXTERNLIBS=$(EXTERNLIBS) RunTmChk.lib
 !ELSE
 !IF [$(CC) 2>&1 | find "x64" >NUL]==0
 MACHINE=X64
 MINOS=520
 ARCH=amd64
+EXTERNLIBS=$(EXTERNLIBS) chkstk.obj
 !ELSE
 !IF [$(CC) 2>&1 | find "AMD64" >NUL]==0
 MACHINE=AMD64

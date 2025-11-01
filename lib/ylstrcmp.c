@@ -26,6 +26,7 @@
 
 #include "yoripch.h"
 #include "yorilib.h"
+#include <remimu.h>
 
 /**
  Compare a Yori string against a NULL terminated string up to a specified
@@ -357,73 +358,76 @@ YoriLibCompareStringIns(
 }
 
 /**
- Match a Yori string against a wildcard pattern.
- Logical flow taken from https://compressionratings.com/d_archiver_template.html
+ Match a Yori string against a regular expression.
 
- @param Str1 The wildcard pattern to use for matching.
+ @param Text The string to match.
 
- @param Index1 The offset within Str1 where to start matching.
+ @param Pattern The regular expression to match against.
 
- @param Str2 The string to match.
-
-@param Index2 The offset within Str2 where to start matching.
-
- @return Zero to indicate a match
+ @return TRUE to indicate a match, FALSE to indicate no match.
  */
-int
-YoriLibWildcardMatch(
-    __in PCYORI_STRING Str1, YORI_ALLOC_SIZE_T Index1,
-    __in PCYORI_STRING Str2, YORI_ALLOC_SIZE_T Index2
+BOOL
+YoriLibRegexMatch(
+    __in PCYORI_STRING Text,
+    __in PCYORI_STRING Pattern
     )
 {
-    if (Index1 < Str1->LengthInChars && Str1->StartOfString[Index1] == '*') {
-        for (++Index1; Index2 < Str2->LengthInChars; ++Index2) {
-            if (!YoriLibWildcardMatch(Str1, Index1, Str2, Index2)) {
-                return 0;
-            }
-        }
-    }
+    RegexToken tokens[1024];
+    int16_t token_count = 1024;
 
-    if (Index2 == Str2->LengthInChars || !(Index1 != Str1->LengthInChars && (Str2->StartOfString[Index2] == Str1->StartOfString[Index1] || Str1->StartOfString[Index1] == '?'))) {
-        return Index1 != Str1->LengthInChars || Index2 != Str2->LengthInChars;
-    }
+    int cbtext = WideCharToMultiByte(CP_UTF8, 0, Text->StartOfString, Text->LengthInChars, NULL, 0, NULL, NULL);
+    char *text = _alloca(cbtext + 1);
+    int cbpattern = WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, NULL, 0, NULL, NULL);
+    char *pattern = _alloca(cbpattern + 1);
+    WideCharToMultiByte(CP_UTF8, 0, Text->StartOfString, Text->LengthInChars, text, cbtext, NULL, NULL);
+    text[cbtext] = '\0';
+    WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, pattern, cbpattern, NULL, NULL);
+    pattern[cbpattern] = '\0';
 
-    return YoriLibWildcardMatch(Str1, ++Index1, Str2, ++Index2);
+    return regex_parse(pattern, tokens, &token_count, 0) == 0 && regex_match(tokens, text, 0, 0, 0, 0) == cbtext;
 }
 
 /**
- Match a Yori string against a wildcard pattern without regard to case.
- Logical flow taken from https://compressionratings.com/d_archiver_template.html
+ Match a Yori string against a regular expression without regard to case.
 
- @param Str1 The wildcard pattern to use for matching.
+ @param Text The string to match.
 
- @param Index1 The offset within Str1 where to start matching.
+ @param Pattern The regular expression to match against.
 
- @param Str2 The string to match.
-
-@param Index2 The offset within Str2 where to start matching.
-
- @return Zero to indicate a match
+ @return TRUE to indicate a match, FALSE to indicate no match.
  */
-int
-YoriLibWildcardMatchIns(
-    __in PCYORI_STRING Str1, YORI_ALLOC_SIZE_T Index1,
-    __in PCYORI_STRING Str2, YORI_ALLOC_SIZE_T Index2
+BOOL
+YoriLibRegexMatchIns(
+    __inout PYORI_STRING Text,
+    __inout PYORI_STRING Pattern
     )
 {
-    if (Index1 < Str1->LengthInChars && Str1->StartOfString[Index1] == '*') {
-        for (++Index1; Index2 < Str2->LengthInChars; ++Index2) {
-            if (!YoriLibWildcardMatchIns(Str1, Index1, Str2, Index2)) {
-                return 0;
+    YoriLibLoadUser32Functions();
+
+    if (DllUser32.pCharLowerBuffW)
+    {
+        YORI_ALLOC_SIZE_T Index;
+        BOOL Escaped = FALSE;
+
+        DllUser32.pCharLowerBuffW(Text->StartOfString, Text->LengthInChars);
+        for (Index = 0; Index < Pattern->LengthInChars; ++Index)
+        {
+            if (Escaped)
+            {
+                Escaped = FALSE;
+            }
+            else if (Pattern->StartOfString[Index] == '\\')
+            {
+                Escaped = TRUE;
+            }
+            else
+            {
+                DllUser32.pCharLowerBuffW(Pattern->StartOfString + Index, 1);
             }
         }
     }
 
-    if (Index2 == Str2->LengthInChars || !(Index1 != Str1->LengthInChars && (YoriLibUpcaseChar(Str2->StartOfString[Index2]) == YoriLibUpcaseChar(Str1->StartOfString[Index1]) || Str1->StartOfString[Index1] == '?'))) {
-        return Index1 != Str1->LengthInChars || Index2 != Str2->LengthInChars;
-    }
-
-    return YoriLibWildcardMatchIns(Str1, ++Index1, Str2, ++Index2);
+    return YoriLibRegexMatch(Text, Pattern);
 }
 
 // vim:sw=4:ts=4:et:
