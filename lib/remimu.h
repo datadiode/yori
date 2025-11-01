@@ -139,13 +139,21 @@ LICENSE
 
 */
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
 
-#ifdef YORI_BUILTIN_FN
+#ifndef YORI_BUILTIN_FN
+#include <stdint.h>
+#else
+typedef UINT8 uint8_t;
+typedef UINT16 uint16_t;
+typedef UINT32 uint32_t;
+typedef UINT64 uint64_t;
+typedef INT16 int16_t;
+typedef INT32 int32_t;
+typedef INT64 int64_t;
 // Disable all sorts of diagnostic output to avoid CRT dependencies
 #undef printf
 #define printf sizeof
