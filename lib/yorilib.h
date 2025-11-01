@@ -3902,15 +3902,15 @@ YoriLibCompareStringCnt(
     __in YORI_ALLOC_SIZE_T count
     );
 
-int
-YoriLibWildcardMatch(
-    __in PCYORI_STRING Str1, YORI_ALLOC_SIZE_T Index1,
-    __in PCYORI_STRING Str2, YORI_ALLOC_SIZE_T Index2
+BOOL
+YoriLibRegexMatch(
+    __in PCYORI_STRING Text,
+    __in PCYORI_STRING Pattern
     );
-int
-YoriLibWildcardMatchIns(
-    __in PCYORI_STRING Str1, YORI_ALLOC_SIZE_T Index1,
-    __in PCYORI_STRING Str2, YORI_ALLOC_SIZE_T Index2
+BOOL
+YoriLibRegexMatchIns(
+    __inout PYORI_STRING Text,
+    __inout PYORI_STRING Pattern
     );
 
 YORI_ALLOC_SIZE_T
