@@ -2,7 +2,7 @@
 #define INCLUDE_REMIMU 1
 
 #ifndef REMIMU_FUNC_VISIBILITY
-#define REMIMU_FUNC_VISIBILITY static inline
+#define REMIMU_FUNC_VISIBILITY static
 #endif
 
 #ifndef REMIMU_CONST_VISIBILITY
