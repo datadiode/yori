@@ -254,6 +254,8 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     int paren_count = 0;
 
+    uint64_t i;
+
     #define _REGEX_CLEAR_TOKEN() do { \
         memset(&token, 0, sizeof(RegexToken)); \
         token.count_lo = 1; \
@@ -294,7 +296,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
     token.count_lo = 0;
     token.count_hi = 0;
 
-    for (uint64_t i = 0; i < pattern_len; i++)
+    for (i = 0; i < pattern_len; i++)
     {
         char c = pattern[i];
         if (state == STATE_QUANT)
@@ -528,15 +530,18 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                 }
                 else if (c == ')')
                 {
+                    int balance = 0;
+                    ptrdiff_t found = -1;
+                    ptrdiff_t diff;
+                    ptrdiff_t l;
+
                     paren_count -= 1;
                     if (paren_count < 0 || k == 0)
                         return -1; // unbalanced parens
                     token.kind = REMIMU_KIND_CLOSE;
                     state = STATE_QUANT;
 
-                    int balance = 0;
-                    ptrdiff_t found = -1;
-                    for (ptrdiff_t l = k - 1; l >= 0; l--)
+                    for (l = k - 1; l >= 0; l--)
                     {
                         if (tokens[l].kind == REMIMU_KIND_NCOPEN || tokens[l].kind == REMIMU_KIND_OPEN)
                         {
@@ -553,7 +558,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                     }
                     if (found == -1)
                         return -1; // unbalanced parens
-                    ptrdiff_t diff = k - found;
+                    diff = k - found;
                     if (diff > 32767)
                         return -1; // too long
                     token.pair_offset = (int16_t)(-diff);
@@ -608,12 +613,13 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
         }
         else if (state == STATE_CC_INIT || state == STATE_CC_NORMAL || state == STATE_CC_RANGE)
         {
+            uint8_t esc_c;
             if (c == '\\' && esc_state == 0)
             {
                 esc_state = 1;
                 continue;
             }
-            uint8_t esc_c = 0;
+            esc_c = 0;
             if (esc_state == 1)
             {
                 esc_state = 0;
@@ -651,14 +657,16 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                 else if (c == 'd' || c == 's' || c == 'w' ||
                          c == 'D' || c == 'S' || c == 'W')
                 {
+                    uint8_t is_upper;
+                    uint16_t m[16];
+
                     if (state == STATE_CC_RANGE)
                     {
                         REMIMU_LOG_ERROR("tried to use a shorthand as part of a range");
                         return -1; // range shorthands can't be part of a range
                     }
-                    uint8_t is_upper = c <= 'Z';
 
-                    uint16_t m[16];
+                    is_upper = c <= 'Z';
                     memset(m, 0, sizeof(m));
 
                     if (is_upper)
@@ -810,7 +818,10 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
             // find next | or ) and how far away it is. store in token
             int balance = 0;
             ptrdiff_t found = -1;
-            for (ptrdiff_t l = k2 + 1; l < k; l++)
+            ptrdiff_t diff;
+            ptrdiff_t l;
+
+            for (l = k2 + 1; l < k; l++)
             {
                 if (tokens[l].kind == REMIMU_KIND_OR && balance == 0)
                 {
@@ -835,7 +846,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
                 REMIMU_LOG_ERROR("unbalanced parens...");
                 return -1; // unbalanced parens
             }
-            ptrdiff_t diff = found - k2;
+            diff = found - k2;
             if (diff > 32767)
             {
                 REMIMU_LOG_ERROR("too long...");
@@ -884,8 +895,6 @@ typedef struct _RegexMatcherState {
 // SAFETY: Partial capture data may be written even if the match fails.
 REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char * text, size_t start_i, uint16_t cap_slots, int64_t * cap_pos, int64_t * cap_span)
 {
-    (void)text;
-
 #ifdef REGEX_VERBOSE
     const uint8_t verbose = 1;
 #else
