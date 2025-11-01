@@ -225,8 +225,6 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 {
     int64_t tokens_len = *token_count;
     uint64_t pattern_len = strlen(pattern);
-    if (token_count == 0)
-        return -2;
 
     // 0: normal
     // 1: just saw a backslash
@@ -252,6 +250,10 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     RegexToken token;
 
+    int16_t k = 0;
+
+    int paren_count = 0;
+
     #define _REGEX_CLEAR_TOKEN() do { \
         memset(&token, 0, sizeof(RegexToken)); \
         token.count_lo = 1; \
@@ -265,8 +267,6 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
             token.mask[n] = ~token.mask[n]; \
         token.mode &= ~REMIMU_MODE_INVERTED; \
     } while (0)
-
-    int16_t k = 0;
 
     #define _REGEX_PUSH_TOKEN() do { \
         if (k == 0 || tokens[k-1].kind != token.kind || (token.kind != REMIMU_KIND_BOUND && token.kind != REMIMU_KIND_NBOUND)) \
@@ -293,8 +293,6 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
     token.kind = REMIMU_KIND_OPEN;
     token.count_lo = 0;
     token.count_hi = 0;
-
-    int paren_count = 0;
 
     for (uint64_t i = 0; i < pattern_len; i++)
     {
