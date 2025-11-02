@@ -56,6 +56,7 @@ OBJS=\
 	 process.obj  \
 	 progman.obj  \
 	 recycle.obj  \
+	 remimu.obj   \
 	 rsrc.obj     \
 	 scut.obj     \
 	 scheme.obj   \

@@ -26,7 +26,7 @@
 
 #include "yoripch.h"
 #include "yorilib.h"
-#include <remimu.h>
+#include "remimu.hxx"
 
 /**
  Compare a Yori string against a NULL terminated string up to a specified

@@ -182,7 +182,7 @@ EXTERNLIBS=$(EXTERNLIBS) RunTmChk.lib
 MACHINE=X64
 MINOS=520
 ARCH=amd64
-EXTERNLIBS=$(EXTERNLIBS) chkstk.obj
+EXTERNLIBS=$(EXTERNLIBS) chkstk.obj bufferoverflowU.lib
 !ELSE
 !IF [$(CC) 2>&1 | find "AMD64" >NUL]==0
 MACHINE=AMD64
@@ -411,6 +411,13 @@ link: $(BINARIES) $(MODULES) compile
 .c.obj:
 !ENDIF
 	@$(CC) $(CFLAGS) -c $<
+
+!IFDEF _NMAKE_VER
+.cxx.obj::
+!ELSE
+.cxx.obj:
+!ENDIF
+	@$(CC) $(CFLAGS_NOUNICODE) -c $<
 
 .rc.obj:
 	@echo $(**F)
