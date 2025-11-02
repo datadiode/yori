@@ -26,6 +26,39 @@
 
 #include <yoripch.h>
 #include <yorilib.h>
+#include <remimu.hxx>
+
+// Modified from https://github.com/sheredom/utf8.h
+// SPDX-Licence-Identifier: Unlicense
+static YORI_ALLOC_SIZE_T utf8nlen(const char *str, YORI_ALLOC_SIZE_T n) {
+  const char *t = str;
+  YORI_ALLOC_SIZE_T length = 0;
+
+  while ((size_t)(str - t) < n && '\0' != *str) {
+    if (0xf0 == (0xf8 & *str)) {
+      /* 4-byte utf8 code point (began with 0b11110xxx) */
+      str += 4;
+    } else if (0xe0 == (0xf0 & *str)) {
+      /* 3-byte utf8 code point (began with 0b1110xxxx) */
+      str += 3;
+    } else if (0xc0 == (0xe0 & *str)) {
+      /* 2-byte utf8 code point (began with 0b110xxxxx) */
+      str += 2;
+    } else { /* if (0x00 == (0x80 & *s)) { */
+      /* 1-byte ascii (began with 0b0xxxxxxx) */
+      str += 1;
+    }
+
+    /* no matter the bytes we marched s forward by, it was
+     * only 1 utf8 codepoint */
+    length++;
+  }
+
+  if ((YORI_ALLOC_SIZE_T)(str - t) > n) {
+    length--;
+  }
+  return length;
+}
 
 /**
  Help text to display to the user.
@@ -36,10 +69,11 @@ CHAR strReplHelpText[] =
         "Output the contents of one or more files with specified text replaced\n"
         "with alternate text.\n"
         "\n"
-        "REPL [-license] [-b] [-i] [-s] <old text> [<new text> [<file>...]]\n"
+        "REPL [-license] [-b] [-i] [-e] [-s] <old text> [<new text> [<file>...]]\n"
         "\n"
         "   -b             Use basic search criteria for files only\n"
         "   -i             Match insensitively\n"
+        "   -e             Perform regex match\n"
         "   -s             Process files from all subdirectories\n";
 
 /**
@@ -73,6 +107,12 @@ typedef struct _REPL_CONTEXT {
     BOOL Insensitive;
 
     /**
+     TRUE if matches should be applied case insensitively, FALSE if they
+     should be applied case sensitively.
+     */
+    BOOL RegexMatch;
+
+    /**
      TRUE to indicate that files are being enumerated recursively.
      */
     BOOL Recursive;
@@ -86,6 +126,12 @@ typedef struct _REPL_CONTEXT {
      A string to replace the match with.
      */
     PYORI_STRING NewString;
+
+    /**
+     Regex tokens.
+     */
+    RegexToken tokens[1024];
+    int16_t token_count;
 
 } REPL_CONTEXT, *PREPL_CONTEXT;
 
@@ -116,6 +162,7 @@ ReplProcessStream(
     YORI_ALLOC_SIZE_T SearchOffset;
     YORI_STRING SearchSubset;
     YORI_ALLOC_SIZE_T MatchOffset;
+    YORI_ALLOC_SIZE_T MatchLength;
     YORI_ALLOC_SIZE_T NextAlternate;
     YORI_ALLOC_SIZE_T LengthRequired;
 
@@ -139,6 +186,88 @@ ReplProcessStream(
         SourceString = &LineString;
         SearchOffset = 0;
         NextAlternate = 0;
+
+        //
+        //  For regex matching, convert the line to UTF8
+        //
+
+        if (ReplContext->RegexMatch) {
+            int offset = 0;
+            const int cbtext = WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
+            char *const text = YoriLibMalloc(cbtext + 1);
+            if (text == NULL) {
+                break;
+            }
+
+            if (ReplContext->Insensitive && DllUser32.pCharLowerBuffW) {
+                SourceString = &AlternateStrings[NextAlternate];
+                NextAlternate = (NextAlternate + 1) % 2;
+                if (!YoriLibCopyString(SourceString, &LineString)) {
+                    break;
+                }
+                DllUser32.pCharLowerBuffW(LineString.StartOfString, LineString.LengthInChars);
+            }
+
+            WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, text, cbtext, NULL, NULL);
+            text[cbtext] = '\0';
+            MatchOffset = 0;
+            while (offset < cbtext) {
+                int length;
+
+                if ((text[offset] & '\xC0') == '\x80') {
+                    ++offset;
+                    continue;
+                }
+
+                length = (int)regex_match(ReplContext->tokens, text, offset, 0, NULL, NULL);
+                if (length <= 0)
+                {
+                    ++MatchOffset;
+                    ++offset;
+                    continue;
+                }
+
+                //
+                //  If a match is found, a new line needs to be assembled
+                //  consisting of characters already processed and not searched
+                //  for, characters before any match was found, the new string,
+                //  and any characters following the match.
+                //
+
+                MatchLength = utf8nlen(text + offset, length - offset);
+                LengthRequired = SourceString->LengthInChars + ReplContext->NewString->LengthInChars - MatchLength + 1;
+
+                if (LengthRequired > AlternateStrings[NextAlternate].LengthAllocated) {
+                    YoriLibFreeStringContents(&AlternateStrings[NextAlternate]);
+                    if (!YoriLibAllocateString(&AlternateStrings[NextAlternate], LengthRequired + 256)) {
+                        break;
+                    }
+                }
+
+                YoriLibInitEmptyString(&InitialPortion);
+                InitialPortion.StartOfString = SourceString->StartOfString;
+                InitialPortion.LengthInChars = SearchOffset + MatchOffset;
+
+                YoriLibInitEmptyString(&TrailingPortion);
+                TrailingPortion.StartOfString = &SourceString->StartOfString[SearchOffset + MatchOffset + MatchLength];
+                TrailingPortion.LengthInChars = SourceString->LengthInChars - SearchOffset - MatchOffset - MatchLength;
+
+                AlternateStrings[NextAlternate].LengthInChars = YoriLibSPrintf(AlternateStrings[NextAlternate].StartOfString, _T("%y%y%y"), &InitialPortion, ReplContext->NewString, &TrailingPortion);
+
+                //
+                //  Continue searching from the newly assembled string after
+                //  the point of any substitutions.
+                //
+
+                SourceString = &AlternateStrings[NextAlternate];
+                SearchOffset += MatchOffset + ReplContext->NewString->LengthInChars;
+                NextAlternate = (NextAlternate + 1) % 2;
+
+                MatchOffset = 0;
+                offset = length;
+            }
+            YoriLibFree(text);
+        } else
         while(TRUE) {
 
             //
@@ -391,6 +520,9 @@ ENTRYPOINT(
             } else if (YoriLibCompareStringLitIns(&Arg, _T("i")) == 0) {
                 ReplContext.Insensitive = TRUE;
                 ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("e")) == 0) {
+                ReplContext.RegexMatch = TRUE;
+                ArgumentUnderstood = TRUE;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("s")) == 0) {
                 ReplContext.Recursive = TRUE;
                 ArgumentUnderstood = TRUE;
@@ -425,6 +557,46 @@ ENTRYPOINT(
     if (ReplContext.MatchString->LengthInChars == 0) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("repl: missing search string\n"));
         return EXIT_FAILURE;
+    }
+
+    if (ReplContext.RegexMatch) {
+        int cbpattern = WideCharToMultiByte(CP_UTF8, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, NULL, 0, NULL, NULL);
+        char* pattern = _alloca(cbpattern + 1);
+
+        if (ReplContext.Insensitive)
+        {
+            YoriLibLoadUser32Functions();
+
+            if (DllUser32.pCharLowerBuffW)
+            {
+                YORI_ALLOC_SIZE_T Index;
+                BOOL Escaped = FALSE;
+
+                for (Index = 0; Index < ReplContext.MatchString->LengthInChars; ++Index)
+                {
+                    if (Escaped)
+                    {
+                        Escaped = FALSE;
+                    }
+                    else if (ReplContext.MatchString->StartOfString[Index] == '\\')
+                    {
+                        Escaped = TRUE;
+                    }
+                    else
+                    {
+                        DllUser32.pCharLowerBuffW(ReplContext.MatchString->StartOfString + Index, 1);
+                    }
+                }
+            }
+        }
+
+        WideCharToMultiByte(CP_UTF8, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, pattern, cbpattern, NULL, NULL);
+        pattern[cbpattern] = '\0';
+        ReplContext.token_count = 1024;
+        if (regex_parse(pattern, ReplContext.tokens, &ReplContext.token_count, 0) != 0) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("repl: invalid regex\n"));
+            return EXIT_FAILURE;
+        }
     }
 
     if (StartArg + 1 >= ArgC) {
