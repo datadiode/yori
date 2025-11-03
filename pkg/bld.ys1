@@ -72,7 +72,7 @@ ymake clean >NUL
 popd
 
 echo *** Building %ARCH% retail
-ymake -f ..\Makefile -m YORI_BUILD_ID=%BLDID% FDI=%FDI% .
+ymake -f ..\Makefile -m YORI_BUILD_ID=%BLDID% FDI=%FDI% BRANCH=%APPVEYOR_REPO_BRANCH% .
 if intcmp %ERRORLEVEL%!=0; goto exit
 
 REM

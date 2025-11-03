@@ -8,11 +8,13 @@ build_script:
   - ps: |
       $headers = @{ "Authorization" = "Bearer $Env:BearerToken"; "Content-type" = "application/json" }
       $project = Invoke-RestMethod -Method Get -Uri "$Env:APPVEYOR_URL/api/projects/$Env:APPVEYOR_ACCOUNT_NAME/$Env:APPVEYOR_PROJECT_SLUG" -Headers $headers
+      New-Item ".\pkg\out" -ItemType Directory
       for ($i = 0; ($i -lt $project.build.jobs.length) -and ($Env:APPVEYOR_JOB_ID -ne $project.build.jobs[$i].jobId); $i++) {
         Write-host "Probing job $i for artifact pkglist.ini"
         $jobId = $project.build.jobs[$i].jobId
-        New-Item ".\pkg\out" -ItemType Directory -ea 0
-        Invoke-RestMethod -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
+        try {
+          Invoke-RestMethod -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
+        } catch { }
       }
   - if exist "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini" type "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini"
   - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
@@ -35,10 +37,13 @@ build_script:
 
 deploy:
   provider: GitHub
+  tag: latest-$(APPVEYOR_REPO_BRANCH)
+  description: $(VERSION)
+  prerelease: true
+  skip_tags: true
+  force_update: true
   auth_token:
     secure: Ff432aLyTjRB02PAo9YoH+iRttges/GD2mpfggEdsZ+oDFoeYYzu3Z52IzsH+E1y
-  on:
-    APPVEYOR_REPO_TAG: true
 
 artifacts:
   - path: pkg\out\pkglist.ini

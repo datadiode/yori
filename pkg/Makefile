@@ -3,8 +3,8 @@
 
 !IFDEF _YMAKE_VER
 
-DAILYPATH=http://www.malsmith.net/download/?obj=yori/latest-daily
-STABLEPATH=http://www.malsmith.net/download/?obj=yori/latest-stable
+DAILYPATH=https://github.com/datadiode/yori/releases/download/latest-master
+STABLEPATH=https://github.com/datadiode/yori/releases/download/latest-stable
 
 #
 # PPC, Alpha and AXP64 are "special" in that I can't personally build them so
@@ -34,7 +34,7 @@ BUILDSTRING=$(YORI_VER_MAJOR).$(YORI_VER_MINOR).$(YORI_BUILD_ID)
 UPGRADEPATH=$(DAILYPATH)
 UPGRADEALTARG=-upgradestable $(STABLEPATH)
 !ENDIF
-SOURCEPATH=http://www.malsmith.net/download/?obj=yori/$(BUILDSTRING)
+SOURCEPATH=https://github.com/datadiode/yori/releases/download/latest-$(BRANCH)
 
 #
 # Determine the debug suffix based on the build type.  Also record the one

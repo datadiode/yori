@@ -197,7 +197,7 @@ YpmDownloadDaily(
     YORI_STRING SourcePath;
     PYORI_STRING FilePath = NULL;
 
-    YoriLibConstantString(&SourcePath, _T("http://www.malsmith.net/download/?obj=yori/latest-daily/"));
+    YoriLibConstantString(&SourcePath, _T("https://github.com/datadiode/yori/releases/download/latest-master/"));
 
     for (i = 1; i < ArgC; i++) {
 
@@ -262,7 +262,7 @@ YpmDownloadStable(
     YORI_STRING SourcePath;
     PYORI_STRING FilePath = NULL;
 
-    YoriLibConstantString(&SourcePath, _T("http://www.malsmith.net/download/?obj=yori/latest-stable/"));
+    YoriLibConstantString(&SourcePath, _T("https://github.com/datadiode/yori/releases/download/latest-stable/"));
 
     for (i = 1; i < ArgC; i++) {
 
