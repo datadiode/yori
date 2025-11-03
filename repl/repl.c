@@ -161,12 +161,14 @@ ReplProcessStream(
     PYORI_STRING SourceString;
     YORI_ALLOC_SIZE_T SearchOffset;
     YORI_STRING SearchSubset;
+    YORI_STRING PatchString;
     YORI_ALLOC_SIZE_T MatchOffset;
     YORI_ALLOC_SIZE_T MatchLength;
     YORI_ALLOC_SIZE_T NextAlternate;
     YORI_ALLOC_SIZE_T LengthRequired;
 
     YoriLibInitEmptyString(&LineString);
+    YoriLibInitEmptyString(&PatchString);
     YoriLibInitEmptyString(&AlternateStrings[0]);
     YoriLibInitEmptyString(&AlternateStrings[1]);
 
@@ -212,6 +214,10 @@ ReplProcessStream(
             text[cbtext] = '\0';
             MatchOffset = 0;
             while (offset < cbtext) {
+                YORI_ALLOC_SIZE_T Index;
+                BOOL Escaped;
+                int64_t cap_pos[10];
+                int64_t cap_span[10];
                 int length;
 
                 if ((text[offset] & '\xC0') == '\x80') {
@@ -219,7 +225,9 @@ ReplProcessStream(
                     continue;
                 }
 
-                length = (int)regex_match(ReplContext->tokens, text, offset, 0, NULL, NULL);
+                memset(cap_pos, 0xFF, sizeof(cap_pos));
+                memset(cap_span, 0xFF, sizeof(cap_span));
+                length = (int)regex_match(ReplContext->tokens, text, offset, 10, cap_pos, cap_span);
                 if (length <= 0)
                 {
                     ++MatchOffset;
@@ -234,8 +242,72 @@ ReplProcessStream(
                 //  and any characters following the match.
                 //
 
+                Escaped = FALSE;
+                LengthRequired = 0;
+                for (Index = 0; Index < ReplContext->NewString->LengthInChars; ++Index)
+                {
+                    const TCHAR Char = ReplContext->NewString->StartOfString[Index];
+                    if (Escaped)
+                    {
+                        Escaped = FALSE;
+                        if (Char >= '0' && Char <= '9')
+                        {
+                            YORI_ALLOC_SIZE_T Digit = Char - '0';
+                            if (cap_span[Digit] > 0)
+                            {
+                                YORI_ALLOC_SIZE_T Span = utf8nlen(text + (YORI_ALLOC_SIZE_T)cap_pos[Digit], (YORI_ALLOC_SIZE_T)cap_span[Digit]);
+                                LengthRequired += Span;
+                            }
+                            continue;
+                        }
+                    }
+                    else if (Char == '$')
+                    {
+                        Escaped = TRUE;
+                        continue;
+                    }
+                    ++LengthRequired;
+                }
+
+                if (LengthRequired > PatchString.LengthAllocated) {
+                    YoriLibFreeStringContents(&PatchString);
+                    if (!YoriLibAllocateString(&PatchString, LengthRequired + 256)) {
+                        break;
+                    }
+                }
+
+                Escaped = FALSE;
+                PatchString.LengthInChars = 0;
+                for (Index = 0; Index < ReplContext->NewString->LengthInChars; ++Index)
+                {
+                    const TCHAR Char = ReplContext->NewString->StartOfString[Index];
+                    if (Escaped)
+                    {
+                        Escaped = FALSE;
+                        if (Char >= '0' && Char <= '9')
+                        {
+                            YORI_ALLOC_SIZE_T Digit = Char - '0';
+                            if (cap_span[Digit] > 0)
+                            {
+                                YORI_ALLOC_SIZE_T Pos = utf8nlen(text, (YORI_ALLOC_SIZE_T)cap_pos[Digit]);
+                                YORI_ALLOC_SIZE_T Span = utf8nlen(text + (YORI_ALLOC_SIZE_T)cap_pos[Digit], (YORI_ALLOC_SIZE_T)cap_span[Digit]);
+                                memcpy(PatchString.StartOfString + PatchString.LengthInChars, LineString.StartOfString + Pos, Span * sizeof(TCHAR));
+                                PatchString.LengthInChars += Span;
+                            }
+                            continue;
+                        }
+                    }
+                    else if (Char == '$')
+                    {
+                        Escaped = TRUE;
+                        continue;
+                    }
+                    PatchString.StartOfString[PatchString.LengthInChars] = Char;
+                    ++PatchString.LengthInChars;
+                }
+
                 MatchLength = utf8nlen(text + offset, length - offset);
-                LengthRequired = SourceString->LengthInChars + ReplContext->NewString->LengthInChars - MatchLength + 1;
+                LengthRequired = SourceString->LengthInChars + PatchString.LengthInChars - MatchLength + 1;
 
                 if (LengthRequired > AlternateStrings[NextAlternate].LengthAllocated) {
                     YoriLibFreeStringContents(&AlternateStrings[NextAlternate]);
@@ -252,7 +324,7 @@ ReplProcessStream(
                 TrailingPortion.StartOfString = &SourceString->StartOfString[SearchOffset + MatchOffset + MatchLength];
                 TrailingPortion.LengthInChars = SourceString->LengthInChars - SearchOffset - MatchOffset - MatchLength;
 
-                AlternateStrings[NextAlternate].LengthInChars = YoriLibSPrintf(AlternateStrings[NextAlternate].StartOfString, _T("%y%y%y"), &InitialPortion, ReplContext->NewString, &TrailingPortion);
+                AlternateStrings[NextAlternate].LengthInChars = YoriLibSPrintf(AlternateStrings[NextAlternate].StartOfString, _T("%y%y%y"), &InitialPortion, &PatchString, &TrailingPortion);
 
                 //
                 //  Continue searching from the newly assembled string after
@@ -260,7 +332,7 @@ ReplProcessStream(
                 //
 
                 SourceString = &AlternateStrings[NextAlternate];
-                SearchOffset += MatchOffset + ReplContext->NewString->LengthInChars;
+                SearchOffset += MatchOffset + PatchString.LengthInChars;
                 NextAlternate = (NextAlternate + 1) % 2;
 
                 MatchOffset = 0;
@@ -340,6 +412,7 @@ ReplProcessStream(
 
     YoriLibLineReadCloseOrCache(LineContext);
     YoriLibFreeStringContents(&LineString);
+    YoriLibFreeStringContents(&PatchString);
     YoriLibFreeStringContents(&AlternateStrings[0]);
     YoriLibFreeStringContents(&AlternateStrings[1]);
 
