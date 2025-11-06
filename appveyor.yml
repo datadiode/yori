@@ -16,7 +16,6 @@ build_script:
           Invoke-RestMethod -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
         } catch { }
       }
-  - if exist "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini" type "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini"
   - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
   - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
   - C:/msys64/usr/bin/wget -nv -O %WINDIR%\bsdtar.exe "https://github.com/aspect-build/bsdtar-prebuilt/releases/download/v3.8.1-fix.1/tar_windows_x86_64.exe"
@@ -27,13 +26,12 @@ build_script:
   - for /f %%v in ('git describe') do set VERSION=%%v
   - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x >> sh\YoriInit.d\Typical.ys1'
   - cd "%APPVEYOR_BUILD_FOLDER%\pkg"
-  - oneyori.exe /c bld.ys1
+  - oneyori.exe /c bld.ys1 "%APPVEYOR_REPO_BRANCH:stable=official%" "%VERSION%-%APPVEYOR_REPO_BRANCH%"
   - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%PLATFORM:X=x%.exe"
   - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
   - copy out\yori-*.cab "%APPVEYOR_BUILD_FOLDER%"
   - del out\yori-*-dbg-*.cab out\yori-one-*.cab out\yori-modular-*.cab
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
-  - if exist "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini" type "%APPVEYOR_BUILD_FOLDER%\pkg\out\pkglist.ini"
 
 deploy:
   provider: GitHub

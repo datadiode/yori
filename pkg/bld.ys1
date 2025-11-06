@@ -51,7 +51,7 @@ REM
 
 set YORI_VER_MAJOR=`findstr YORI_BASE_VER_MAJOR= ..\config\ver.mk|cut -d = -f 1`
 set YORI_VER_MINOR=`findstr YORI_BASE_VER_MINOR= ..\config\ver.mk|cut -d = -f 1`
-if strcmp %BLDID%==0; set BUILDSTRING=%YORI_VER_MAJOR%.%YORI_VER_MINOR%; set BUILDSTRING=%YORI_VER_MAJOR%.%YORI_VER_MINOR%.%BLDID%
+set BUILDSTRING=%2%
 
 set OUTDIR=%CD%\out
 
@@ -63,7 +63,7 @@ popd
 mkdir "%OUTDIR%" >NUL 2>&1
 
 echo *** Building %ARCH% debug
-ymake -f ..\Makefile -m DEBUG=1 YORI_BUILD_ID=%BLDID% FDI=%FDI% .
+ymake -f ..\Makefile -m DEBUG=1 YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI% .
 if intcmp %ERRORLEVEL%!=0; goto exit
 
 echo *** Cleaning tree
@@ -72,7 +72,7 @@ ymake clean >NUL
 popd
 
 echo *** Building %ARCH% retail
-ymake -f ..\Makefile -m YORI_BUILD_ID=%BLDID% FDI=%FDI% BRANCH=%APPVEYOR_REPO_BRANCH% .
+ymake -f ..\Makefile -m YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI% .
 if intcmp %ERRORLEVEL%!=0; goto exit
 
 REM
