@@ -1,8 +1,17 @@
-os: Visual Studio 2015
+image:
+  - Visual Studio 2015
+  - Visual Studio 2019
 
 platform:
   - x86
   - x64
+
+matrix:
+  exclude:
+    - image: Visual Studio 2015
+      platform: x64
+    - image: Visual Studio 2019
+      platform: x86
 
 build_script:
   - ps: |
@@ -13,11 +22,11 @@ build_script:
         Write-host "Probing job $i for artifact pkglist.ini"
         $jobId = $project.build.jobs[$i].jobId
         try {
-          Invoke-RestMethod -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
+          Invoke-RestMethod -ErrorAction Continue -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
         } catch { }
       }
   - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
-  - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
+  - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x% 8.1
   - C:/msys64/usr/bin/wget -nv -O %WINDIR%\bsdtar.exe "https://github.com/aspect-build/bsdtar-prebuilt/releases/download/v3.8.1-fix.1/tar_windows_x86_64.exe"
   - C:/msys64/usr/bin/wget -nv -O %TEMP%\perc-bin.zip "https://github.com/avih/perc/releases/download/v0.1/perc.v0.1.zip"
   - C:/msys64/usr/bin/wget -nv -O %TEMP%\yori-bin.zip "https://github.com/malxau/yori/files/15286801/yori-bin--2024-05-02-g106a280-msvc2015.zip"
