@@ -71,10 +71,23 @@ for:
         $wc = New-Object 'System.Net.WebClient'
         $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
 
+# https://stackoverflow.com/questions/3790454/how-do-i-break-a-string-in-yaml-over-multiple-lines
 deploy:
   provider: GitHub
   tag: latest-$(APPVEYOR_REPO_BRANCH)
-  description: $(VERSION)
+  description: |
+    ### Web installers
+    * [ysetup-x64.exe](https://github.com/datadiode/yori/releases/download/latest-$(APPVEYOR_REPO_BRANCH)/ysetup-x64.exe)
+    * [ysetup-x86.exe](https://github.com/datadiode/yori/releases/download/latest-$(APPVEYOR_REPO_BRANCH)/ysetup-x86.exe)
+
+    <sup>These installers pick up the latest release from this repository.</sup>
+
+    ### Offline installers
+    * [ysetup-$(VERSION)-x64.exe](https://github.com/datadiode/yori/releases/download/latest-$(APPVEYOR_REPO_BRANCH)/ysetup-$(VERSION)-x64.exe)
+    * [ysetup-$(VERSION)-x86.exe](https://github.com/datadiode/yori/releases/download/latest-$(APPVEYOR_REPO_BRANCH)/ysetup-$(VERSION)-x86.exe)
+
+    <sup>These are self-contained installers which won't go online during installation.</sup>
+
   prerelease: true
   skip_tags: true
   force_update: true
