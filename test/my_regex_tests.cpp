@@ -633,6 +633,10 @@ void testify(void)
     expect_match_len("[A-\\x5A]", "M", 1);
     expect_no_match("[A-\\x5A]", "m");
         
+    // Normal text around space
+    must_parse_ok("X Y");
+    expect_match_len("X Y", "X Y", 3);
+
     print_regex_tokens(tokens);
     
     puts("All regex tests passed!");
