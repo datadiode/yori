@@ -42,6 +42,12 @@ build_script:
   - del out\yori-*-dbg-*.cab out\yori-one-*.cab out\yori-modular-*.cab
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
 
+test_script:
+  - type "%APPVEYOR_BUILD_FOLDER%\test\yoritest.xml"
+  - ps: |
+      $wc = New-Object 'System.Net.WebClient'
+      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
+
 for:
 -
   matrix:
@@ -49,11 +55,21 @@ for:
       - image: Visual Studio 2019
 
   test_script:
+    - type "%APPVEYOR_BUILD_FOLDER%\test\yoritest.xml"
+    - ps: |
+        $wc = New-Object 'System.Net.WebClient'
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
     - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-typical-amd64.cab" -C %WINDIR% timethis.exe
     - timethis -r C:/msys64/mingw32.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
-    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.log"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.xml"
+    - ps: |
+        $wc = New-Object 'System.Net.WebClient'
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
     - timethis -r C:/msys64/mingw64.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
-    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.log"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.xml"
+    - ps: |
+        $wc = New-Object 'System.Net.WebClient'
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
 
 deploy:
   provider: GitHub
@@ -62,6 +78,10 @@ deploy:
   prerelease: true
   skip_tags: true
   force_update: true
+  on:
+    branch:
+      - master
+      - stable
   auth_token:
     secure: Ff432aLyTjRB02PAo9YoH+iRttges/GD2mpfggEdsZ+oDFoeYYzu3Z52IzsH+E1y
 

@@ -62,9 +62,23 @@ popd
 
 mkdir "%OUTDIR%" >NUL 2>&1
 
+builtin echo "<?xml version='1.0' encoding='UTF-8'?>" > ..\test\yoritest.xml
+
+builtin echo "<testsuites>" >> ..\test\yoritest.xml
+builtin echo "<testsuite name='yoritest.exe'>" >> ..\test\yoritest.xml
+
 echo *** Building %ARCH% debug
 ymake -f ..\Makefile -m DEBUG=1 YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI% .
 if intcmp %ERRORLEVEL%!=0; goto exit
+ymake -f ..\test\Makefile -m DEBUG=1 YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI%
+if intcmp %ERRORLEVEL%!=0; goto exit
+builtin echo "<testcase name='yoritest-%ARCH%-debug' classname='Tests'>" >> ..\test\yoritest.xml
+builtin echo "<system-out>" >> ..\test\yoritest.xml
+..\test\yoritest.exe >> ..\test\yoritest.xml
+set ERR=%ERRORLEVEL%
+builtin echo "</system-out>" >> ..\test\yoritest.xml
+if intcmp %ERR%!=0; builtin echo "<failure message='yoritest exited with code %ERR%'/>" >> ..\test\yoritest.xml
+builtin echo "</testcase>" >> ..\test\yoritest.xml
 
 echo *** Cleaning tree
 pushd ..
@@ -74,6 +88,18 @@ popd
 echo *** Building %ARCH% retail
 ymake -f ..\Makefile -m YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI% .
 if intcmp %ERRORLEVEL%!=0; goto exit
+ymake -f ..\test\Makefile -m YORI_BUILD_ID=%BLDID% YORI_BUILD_STRING=%BUILDSTRING% FDI=%FDI%
+if intcmp %ERRORLEVEL%!=0; goto exit
+builtin echo "<testcase name='yoritest-%ARCH%-retail' classname='Tests'>" >> ..\test\yoritest.xml
+builtin echo "<system-out>" >> ..\test\yoritest.xml
+..\test\yoritest.exe >> ..\test\yoritest.xml
+set ERR=%ERRORLEVEL%
+builtin echo "</system-out>" >> ..\test\yoritest.xml
+if intcmp %ERR%!=0; builtin echo "<failure message='yoritest exited with code %ERR%'/>" >> ..\test\yoritest.xml
+builtin echo "</testcase>" >> ..\test\yoritest.xml
+
+builtin echo "</testsuite>" >> ..\test\yoritest.xml
+builtin echo "</testsuites>" >> ..\test\yoritest.xml
 
 REM
 REM Generate pkglist.ini so that tools can find packages provided by this

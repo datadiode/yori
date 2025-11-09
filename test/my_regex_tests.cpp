@@ -4,8 +4,17 @@ setlocal
 pushd `ypath -f $PARENT$ "%~SCRIPTNAME%"`
 set BASE=`ypath -f $BASE$ "%~SCRIPTNAME%"`
 set FILE=`ypath -f $FILE$ "%~SCRIPTNAME%"`
-c++ -static -include stddef.h %FILE% -o %BASE%-%MSYSTEM_CARCH% -lpcre2-8 > %BASE%.log
-%BASE%-%MSYSTEM_CARCH% >> %BASE%.log
+builtin echo "<?xml version='1.0' encoding='UTF-8'?>" > %BASE%.xml
+builtin echo "<testsuites>" >> %BASE%.xml
+builtin echo "<testsuite name='%FILE%'>" >> %BASE%.xml
+builtin echo "<testcase name='%BASE%-%MSYSTEM_CARCH%' classname='Tests'>" >> %BASE%.xml
+builtin echo "<system-out>" >> %BASE%.xml
+c++ -static -include stddef.h %FILE% -o %BASE%-%MSYSTEM_CARCH% -lpcre2-8 >> %BASE%.xml
+%BASE%-%MSYSTEM_CARCH% >> %BASE%.xml
+builtin echo "</system-out>" >> %BASE%.xml
+builtin echo "</testcase>" >> %BASE%.xml
+builtin echo "</testsuite>" >> %BASE%.xml
+builtin echo "</testsuites>" >> %BASE%.xml
 popd
 endlocal
 goto :eof
