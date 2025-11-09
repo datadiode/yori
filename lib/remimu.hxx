@@ -39,4 +39,4 @@ int regex_parse(const char * pattern, RegexToken * tokens, int16_t * token_count
 // SAFETY: The text variable must be null-terminated, and start_i must be the index of a character within the string or its null terminator.
 // SAFETY: Tokens array must be terminated by a REMIMU_KIND_END token (done by default by regex_parse).
 // SAFETY: Partial capture data may be written even if the match fails.
-int64_t regex_match(const RegexToken * tokens, const char * text, size_t start_i, uint16_t cap_slots, int64_t * cap_pos, int64_t * cap_span);
+ptrdiff_t regex_match(const RegexToken * tokens, const char * text, size_t start_i, uint16_t cap_slots, ptrdiff_t * cap_pos, ptrdiff_t * cap_span);

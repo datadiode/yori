@@ -42,6 +42,19 @@ build_script:
   - del out\yori-*-dbg-*.cab out\yori-one-*.cab out\yori-modular-*.cab
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
 
+for:
+-
+  matrix:
+    only:
+      - image: Visual Studio 2019
+
+  test_script:
+    - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-typical-amd64.cab" -C %WINDIR% timethis.exe
+    - timethis -r C:/msys64/mingw32.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.log"
+    - timethis -r C:/msys64/mingw64.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.log"
+
 deploy:
   provider: GitHub
   tag: latest-$(APPVEYOR_REPO_BRANCH)

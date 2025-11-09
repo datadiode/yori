@@ -40,13 +40,13 @@ FUNCTIONS
     )
 
     // Returns match length, or -1 on no match, or -2 on out of memory, or -3 if the regex is invalid.
-    int64_t regex_match(
+    ptrdiff_t regex_match(
         const RegexToken * tokens,  // Parsed regex to match against text.
         const char * text,          // Text to match against tokens.
         size_t start_i,             // index value to match at.
         uint16_t cap_slots,         // Number of allowed capture info output slots.
-        int64_t * cap_pos,          // Capture position info output buffer.
-        int64_t * cap_span          // Capture length info output buffer.
+        ptrdiff_t * cap_pos,        // Capture position info output buffer.
+        ptrdiff_t * cap_span        // Capture length info output buffer.
     )
 
     void print_regex_tokens(
@@ -120,12 +120,12 @@ USAGE
     int e = regex_parse("((a)|(b))++", tokens, &token_count, 0);
     assert(!e);
 
-    int64_t cap_pos[5];
-    int64_t cap_span[5];
+    ptrdiff_t cap_pos[5];
+    ptrdiff_t cap_span[5];
     memset(cap_pos, 0xFF, sizeof(cap_pos));
     memset(cap_span, 0xFF, sizeof(cap_span));
 
-    int64_t matchlen = regex_match(tokens, "aaaaaabbbabaqa", 0, 5, cap_pos, cap_span);
+    ptrdiff_t matchlen = regex_match(tokens, "aaaaaabbbabaqa", 0, 5, cap_pos, cap_span);
     printf("Match length: %zd\n", matchlen);
     for (int i = 0; i < 5; i++)
         printf("Capture %d: %zd plus %zd\n", i, cap_pos[i], cap_span[i]);
@@ -203,8 +203,8 @@ static int remimu_nibble_hex_to_bin(char hex, uint8_t *bin)
 /// SAFETY: tokens buffer must have at least the input token_count number of RegexToken objects. They are allowed to be uninitialized.
 REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens, int16_t * token_count, int32_t flags)
 {
-    int64_t tokens_len = *token_count;
-    uint64_t pattern_len = strlen(pattern);
+    int16_t tokens_len = *token_count;
+    size_t pattern_len = strlen(pattern);
     if (tokens_len == 0)
         return -2;
 
@@ -276,7 +276,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     int paren_count = 0;
 
-    for (uint64_t i = 0; i < pattern_len; i++)
+    for (size_t i = 0; i < pattern_len; i++)
     {
         char c = pattern[i];
         if (state == STATE_QUANT)
@@ -767,7 +767,7 @@ REMIMU_FUNC_VISIBILITY int regex_parse(const char * pattern, RegexToken * tokens
 
     // copy quantifiers from )s to (s (so (s know whether they're optional)
     // also take the opportunity to smuggle "quantified group index" into the mask field for the )
-    uint64_t n = 0;
+    size_t n = 0;
     for (int16_t k2 = 0; k2 < k; k2++)
     {
         if (tokens[k2].kind == REMIMU_KIND_CLOSE)
@@ -844,9 +844,9 @@ typedef struct _RegexMatcherState {
     uint32_t range_min;
     uint32_t range_max;
 #else
-    uint64_t i;
-    uint64_t range_min;
-    uint64_t range_max;
+    size_t i;
+    size_t range_min;
+    size_t range_max;
 #endif
 } RegexMatcherState;
 
@@ -861,10 +861,8 @@ typedef struct _RegexMatcherState {
 // SAFETY: The text variable must be null-terminated, and start_i must be the index of a character within the string or its null terminator.
 // SAFETY: Tokens array must be terminated by a REMIMU_KIND_END token (done by default by regex_parse).
 // SAFETY: Partial capture data may be written even if the match fails.
-REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char * text, size_t start_i, uint16_t cap_slots, int64_t * cap_pos, int64_t * cap_span)
+REMIMU_FUNC_VISIBILITY ptrdiff_t regex_match(const RegexToken * tokens, const char * text, size_t start_i, uint16_t cap_slots, ptrdiff_t * cap_pos, ptrdiff_t * cap_span)
 {
-    (void)text;
-
 #ifdef REGEX_VERBOSE
     const uint8_t verbose = 1;
 #else
@@ -890,8 +888,8 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
     uint16_t q_group_cap_index[aux_stats_size];
     memset(q_group_cap_index, 0xFF, sizeof(q_group_cap_index));
 
-    uint64_t tokens_len = 0;
-    uint32_t k = 0;
+    size_t tokens_len = 0;
+    size_t k = 0;
     uint16_t caps = 0;
 
     while (tokens[k].kind != REMIMU_KIND_END)
@@ -924,17 +922,17 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
     RegexMatcherState rewind_stack[stack_size_max];
     uint16_t stack_n = 0;
 
-    uint64_t i = start_i;
+    size_t i = start_i;
 
-    uint64_t range_min = 0;
-    uint64_t range_max = 0;
+    size_t range_min = 0;
+    size_t range_max = 0;
     uint8_t just_rewinded = 0;
 
     #define _P_TEXT_HIGHLIGHTED() do { \
         IF_VERBOSE(printf("\033[91m"); \
-        for (uint64_t q = 0; q < i; q++) printf("%c", text[q]); \
+        for (size_t q = 0; q < i; q++) printf("%c", text[q]); \
         printf("\033[0m"); \
-        for (uint64_t q = i; text[q] != 0; q++) printf("%c", text[q]); \
+        for (size_t q = i; text[q] != 0; q++) printf("%c", text[q]); \
         printf("\n");) \
     } while (0)
 
@@ -1081,7 +1079,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                     IF_VERBOSE(printf("rewinded into OPEN. i is %zd, depth is %d\n", i, stack_n);)
                     just_rewinded = 0;
 
-                    uint64_t orig_k = k;
+                    size_t orig_k = k;
 
                     IF_VERBOSE(printf("--- trying to try another alternation, start k is %d, rmin is %zu\n", k, range_min);)
 
@@ -1272,7 +1270,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                         {
                             // greedy. if we're going to go outside the acceptable range, rewind
                             IF_VERBOSE(printf("kufukufu %d %zd\n", tokens[k].count_lo, range_min);)
-                            //uint64_t old_i = i;
+                            //size_t old_i = i;
                             if (q_group_state[tokens[k].mask[0]] < range_min && !q_group_accepts_zero[tokens[k].mask[0]])
                             {
                                 IF_VERBOSE(printf("rewinding from greedy group because we're going to go out of range (%d vs %zd)\n", q_group_state[tokens[k].mask[0]], range_min);)
@@ -1304,9 +1302,9 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
             {
                 if (!just_rewinded)
                 {
-                    uint64_t n = 0;
+                    size_t n = 0;
                     // do whatever the obligatory minimum amount of matching is
-                    uint64_t old_i = i;
+                    size_t old_i = i;
                     while (n < tokens[k].count_lo && text[i] != 0 && _REGEX_CHECK_MASK(k, text[i]))
                     {
                         i += 1;
@@ -1328,7 +1326,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
                     }
                     else
                     {
-                        uint64_t ilimit = tokens[k].count_hi;
+                        size_t ilimit = tokens[k].count_hi;
                         if (ilimit == 0)
                             ilimit = ~ilimit;
                         range_min = n;
@@ -1350,7 +1348,7 @@ REMIMU_FUNC_VISIBILITY int64_t regex_match(const RegexToken * tokens, const char
 
                     if (tokens[k].mode & REMIMU_MODE_LAZY)
                     {
-                        uint64_t ilimit = range_max;
+                        size_t ilimit = range_max;
                         if (ilimit == 0)
                             ilimit = ~ilimit;
 
