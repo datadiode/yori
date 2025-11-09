@@ -22,7 +22,7 @@ typedef int int32_t;
 typedef __int64 int64_t;
 
 // Tolerate possible loss of data due to bitness mismatch
-#pragma warning(disable: 4244)
+#pragma warning(disable: 4244 4267)
 
 // Disable all sorts of diagnostic output to avoid CRT dependencies
 #include <stdio.h>

@@ -216,8 +216,8 @@ ReplProcessStream(
             while (offset < cbtext) {
                 YORI_ALLOC_SIZE_T Index;
                 BOOL Escaped;
-                int64_t cap_pos[10];
-                int64_t cap_span[10];
+                ptrdiff_t cap_pos[10];
+                ptrdiff_t cap_span[10];
                 int length;
 
                 if ((text[offset] & '\xC0') == '\x80') {
