@@ -3902,12 +3902,12 @@ YoriLibCompareStringCnt(
     __in YORI_ALLOC_SIZE_T count
     );
 
-BOOL
+int
 YoriLibRegexMatch(
     __in PCYORI_STRING Text,
     __in PCYORI_STRING Pattern
     );
-BOOL
+int
 YoriLibRegexMatchIns(
     __inout PYORI_STRING Text,
     __inout PYORI_STRING Pattern

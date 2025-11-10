@@ -247,18 +247,13 @@ ENTRYPOINT(
 
     } else if (MatchingOperator == &OperatorMatches[STRCMP_OPERATOR_REGEX_MATCH]) {
 
-        if (MatchInsensitive) {
-            if (YoriLibRegexMatchIns(&FirstPart, &SecondPart)) {
-                Result = EXIT_SUCCESS;
-            } else {
-                Result = EXIT_FAILURE;
-            }
+        const int YoriLibResult = (MatchInsensitive ? YoriLibRegexMatchIns : YoriLibRegexMatch)(&FirstPart, &SecondPart);
+        if (YoriLibResult < 0) {
+            Result = (DWORD)YoriLibResult;
+        } else if (YoriLibResult) {
+            Result = EXIT_SUCCESS;
         } else {
-            if (YoriLibRegexMatch(&FirstPart, &SecondPart)) {
-                Result = EXIT_SUCCESS;
-            } else {
-                Result = EXIT_FAILURE;
-            }
+            Result = EXIT_FAILURE;
         }
 
     } else {

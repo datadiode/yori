@@ -364,9 +364,9 @@ YoriLibCompareStringIns(
 
  @param Pattern The regular expression to match against.
 
- @return TRUE to indicate a match, FALSE to indicate no match.
+ @return TRUE to indicate a match, FALSE to indicate no match, < 0 on error.
  */
-BOOL
+int
 YoriLibRegexMatch(
     __in PCYORI_STRING Text,
     __in PCYORI_STRING Pattern
@@ -374,7 +374,9 @@ YoriLibRegexMatch(
 {
     RegexToken tokens[1024];
     int16_t token_count = 1024;
+    ptrdiff_t ec;
 
+    int offset = 0;
     int cbtext = WideCharToMultiByte(CP_UTF8, 0, Text->StartOfString, Text->LengthInChars, NULL, 0, NULL, NULL);
     char *text = _alloca(cbtext + 1);
     int cbpattern = WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, NULL, 0, NULL, NULL);
@@ -384,7 +386,22 @@ YoriLibRegexMatch(
     WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, pattern, cbpattern, NULL, NULL);
     pattern[cbpattern] = '\0';
 
-    return regex_parse(pattern, tokens, &token_count, 0) == 0 && regex_match(tokens, text, 0, 0, 0, 0) == cbtext;
+    ec = regex_parse(pattern, tokens, &token_count, 0);
+    if (ec < 0) {
+        return (int)ec - 'p';
+    }
+
+    for (ec = -1; ec < 0 && offset <= cbtext; ++offset) {
+        if ((text[offset] & '\xC0') == '\x80') {
+            continue;
+        }
+        ec = regex_match(tokens, text, offset, 0, 0, 0);
+        if (ec < -1) { // -1 means no match which is not an error
+            return (int)ec - 'm';
+        }
+    }
+
+    return ec >= 0;
 }
 
 /**
@@ -394,9 +411,9 @@ YoriLibRegexMatch(
 
  @param Pattern The regular expression to match against.
 
- @return TRUE to indicate a match, FALSE to indicate no match.
+ @return TRUE to indicate a match, FALSE to indicate no match, < 0 on error.
  */
-BOOL
+int
 YoriLibRegexMatchIns(
     __inout PYORI_STRING Text,
     __inout PYORI_STRING Pattern
