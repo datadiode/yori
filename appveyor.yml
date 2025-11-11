@@ -47,6 +47,13 @@ test_script:
   - ps: |
       $wc = New-Object 'System.Net.WebClient'
       $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
+  - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-extra-win32.cab" -C %WINDIR% ystrcmp.exe
+  - C:/msys64/usr/bin/wget -nv -O "%APPVEYOR_BUILD_FOLDER%\test\testinput1" https://github.com/PCRE2Project/pcre2/raw/refs/tags/pcre2-10.47/testdata/testinput1
+  - cscript "%APPVEYOR_BUILD_FOLDER%\test\pcretest.vbs" //nologo /ystrcmp:ystrcmp.exe "%APPVEYOR_BUILD_FOLDER%\test\testinput1" > "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
+  - type "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
+  - ps: |
+      $wc = New-Object 'System.Net.WebClient'
+      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
 
 for:
 -
@@ -59,6 +66,13 @@ for:
     - ps: |
         $wc = New-Object 'System.Net.WebClient'
         $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
+    - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-extra-amd64.cab" -C %WINDIR% ystrcmp.exe
+    - C:/msys64/usr/bin/wget -nv -O "%APPVEYOR_BUILD_FOLDER%\test\testinput1" https://github.com/PCRE2Project/pcre2/raw/refs/tags/pcre2-10.47/testdata/testinput1
+    - cscript "%APPVEYOR_BUILD_FOLDER%\test\pcretest.vbs" //nologo /ystrcmp:ystrcmp.exe "%APPVEYOR_BUILD_FOLDER%\test\testinput1" > "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
+    - ps: |
+        $wc = New-Object 'System.Net.WebClient'
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
     - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-typical-amd64.cab" -C %WINDIR% timethis.exe
     - timethis -r C:/msys64/mingw32.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
     - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.xml"
