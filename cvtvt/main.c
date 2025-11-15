@@ -384,7 +384,7 @@ ENTRYPOINT(
             DWORD Err;
 
             YoriLibInitEmptyString(&CmdLine);
-            if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], TRUE, TRUE, &CmdLine)) {
+            if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, TRUE, &CmdLine)) {
                 return EXIT_FAILURE;
             }
             Err = CvtvtLaunchChildProcess(&ArgV[StartArg], &CmdLine, &hSource, &hControl);

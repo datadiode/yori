@@ -124,8 +124,12 @@ YoriLibCheckIfArgNeedsQuotes(
 
  @param ArgV An array of YORI_STRINGs constituting the argument array.
 
- @param EncloseInQuotes If the argument contains a space, enclose it in quotes.
-        If FALSE, return purely space delimited arguments.
+ @param EncloseInQuotes Conditionally enclose arguments in quotes.
+        If (PBOOLEAN)FALSE, return purely space delimited arguments.
+        If (PBOOLEAN)TRUE, enquote arguments which contain spaces.
+        If array of boolean flags, enquote arguments according to given flags.
+        The IS_INTRESOURCE() macro from WinUser.h is abused to distinguish the
+        latter case from the former ones by exploiting platform peculiarity.
 
  @param ApplyChildProcessEscapes If TRUE, quotes and backslashes preceeding
         quotes are escaped with an extra backslash.  If FALSE, this does not
@@ -146,7 +150,7 @@ BOOL
 YoriLibBuildCmdlineFromArgcArgv(
     __in YORI_ALLOC_SIZE_T ArgC,
     __in YORI_STRING ArgV[],
-    __in BOOLEAN EncloseInQuotes,
+    __in PBOOLEAN EncloseInQuotes,
     __in BOOLEAN ApplyChildProcessEscapes,
     __out PYORI_STRING CmdLine
     )
@@ -165,18 +169,18 @@ YoriLibBuildCmdlineFromArgcArgv(
 
     YoriLibInitEmptyString(CmdLine);
 
-    BufferLength = 0;
+    BufferLength = 1;
 
     for (count = 0; count < ArgC; count++) {
         BufferLength += 1;
         ThisArg = &ArgV[count];
-        Quoted = FALSE;
-        if (EncloseInQuotes) {
-            Quoted = YoriLibCheckIfArgNeedsQuotes(ThisArg);
-            if (Quoted) {
-                BufferLength += 2;
-            }
+
+        Quoted = EncloseInQuotes && (IS_INTRESOURCE(EncloseInQuotes) ? YoriLibCheckIfArgNeedsQuotes(ThisArg) : EncloseInQuotes[count]);
+
+        if (Quoted) {
+            BufferLength += 2;
         }
+
         for (SrcOffset = 0; SrcOffset < ThisArg->LengthInChars; SrcOffset++) {
             if (ApplyChildProcessEscapes &&
                 (ThisArg->StartOfString[SrcOffset] == '\\' ||
@@ -184,24 +188,22 @@ YoriLibBuildCmdlineFromArgcArgv(
 
                 for (SlashCount = 0; SrcOffset + SlashCount < ThisArg->LengthInChars && ThisArg->StartOfString[SrcOffset + SlashCount] == '\\'; SlashCount++);
                 if (SrcOffset + SlashCount < ThisArg->LengthInChars && ThisArg->StartOfString[SrcOffset + SlashCount] == '"') {
-                    SlashesToWrite = (YORI_ALLOC_SIZE_T)(SlashCount * 2 + 1);
-                    SrcOffset = (YORI_ALLOC_SIZE_T)(SrcOffset + SlashCount);
+                    SlashesToWrite = SlashCount * 2 + 1;
+                    SrcOffset = SrcOffset + SlashCount;
                     BufferLength += 1;
                 } else if (SrcOffset + SlashCount == ThisArg->LengthInChars && Quoted) {
-                    SlashesToWrite = (YORI_ALLOC_SIZE_T)(SlashCount * 2);
-                    SrcOffset = (YORI_ALLOC_SIZE_T)(SrcOffset + SlashCount - 1);
+                    SlashesToWrite = SlashCount * 2;
+                    SrcOffset = SrcOffset + SlashCount - 1;
                 } else {
                     SlashesToWrite = SlashCount;
-                    SrcOffset = (YORI_ALLOC_SIZE_T)(SrcOffset + SlashCount - 1);
+                    SrcOffset = SrcOffset + SlashCount - 1;
                 }
-                BufferLength = (YORI_ALLOC_SIZE_T)(BufferLength + SlashesToWrite);
+                BufferLength += SlashesToWrite;
             } else {
-                BufferLength = (YORI_ALLOC_SIZE_T)(BufferLength + 1);
+                BufferLength += 1;
             }
         }
     }
-
-    BufferLength = (YORI_ALLOC_SIZE_T)(BufferLength + 1);
 
     if (!YoriLibAllocateString(CmdLine, BufferLength)) {
         return FALSE;
@@ -216,15 +218,11 @@ YoriLibBuildCmdlineFromArgcArgv(
             CmdLineOffset++;
         }
 
-        if (EncloseInQuotes) {
-            Quoted = YoriLibCheckIfArgNeedsQuotes(ThisArg);
+        Quoted = EncloseInQuotes && (IS_INTRESOURCE(EncloseInQuotes) ? YoriLibCheckIfArgNeedsQuotes(ThisArg) : EncloseInQuotes[count]);
 
-            if (Quoted) {
-                CmdLine->StartOfString[CmdLineOffset] = '"';
-                CmdLineOffset++;
-            }
-        } else {
-            Quoted = FALSE;
+        if (Quoted) {
+            CmdLine->StartOfString[CmdLineOffset] = '"';
+            CmdLineOffset++;
         }
 
         for (SrcOffset = DestOffset = 0; SrcOffset < ThisArg->LengthInChars; SrcOffset++, DestOffset++) {
@@ -235,11 +233,11 @@ YoriLibBuildCmdlineFromArgcArgv(
                 for (SlashCount = 0; SrcOffset + SlashCount < ThisArg->LengthInChars && ThisArg->StartOfString[SrcOffset + SlashCount] == '\\'; SlashCount++);
                 if (SrcOffset + SlashCount < ThisArg->LengthInChars && ThisArg->StartOfString[SrcOffset + SlashCount] == '"') {
                     // Escape the escapes and the quote
-                    SlashesToWrite = (YORI_ALLOC_SIZE_T)(SlashCount * 2 + 1);
+                    SlashesToWrite = SlashCount * 2 + 1;
                     AddQuote = TRUE;
                 } else if (SrcOffset + SlashCount == ThisArg->LengthInChars && Quoted) {
                     // Escape the escapes but not the quote
-                    SlashesToWrite = (YORI_ALLOC_SIZE_T)(SlashCount * 2);
+                    SlashesToWrite = SlashCount * 2;
                     AddQuote = FALSE;
                 } else {
                     // No escapes, just copy verbatim
@@ -251,23 +249,21 @@ YoriLibBuildCmdlineFromArgcArgv(
                 }
                 if (AddQuote) {
                     CmdLine->StartOfString[CmdLineOffset + DestOffset + WriteSlashCount] = '"';
-                    SrcOffset = (YORI_ALLOC_SIZE_T)(SrcOffset + SlashCount);
-                    DestOffset = (YORI_ALLOC_SIZE_T)(DestOffset + WriteSlashCount);
+                    SrcOffset = SrcOffset + SlashCount;
+                    DestOffset = DestOffset + WriteSlashCount;
                 } else {
-                    SrcOffset = (YORI_ALLOC_SIZE_T)(SrcOffset + SlashCount - 1);
-                    DestOffset = (YORI_ALLOC_SIZE_T)(DestOffset + WriteSlashCount - 1);
+                    SrcOffset = SrcOffset + SlashCount - 1;
+                    DestOffset = DestOffset + WriteSlashCount - 1;
                 }
             } else {
                 CmdLine->StartOfString[CmdLineOffset + DestOffset] = ThisArg->StartOfString[SrcOffset];
             }
         }
-        CmdLineOffset = (YORI_ALLOC_SIZE_T)(CmdLineOffset + DestOffset);
+        CmdLineOffset = CmdLineOffset + DestOffset;
 
-        if (EncloseInQuotes) {
-            if (Quoted) {
-                CmdLine->StartOfString[CmdLineOffset] = '"';
-                CmdLineOffset++;
-            }
+        if (Quoted) {
+            CmdLine->StartOfString[CmdLineOffset] = '"';
+            CmdLineOffset++;
         }
     }
 
@@ -506,7 +502,7 @@ YoriLibArgArrayToVariableValue(
     //
 
     if (ArgC - ArgWithEquals > 0) {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - ArgWithEquals, &ArgV[ArgWithEquals], TRUE, FALSE, Value)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - ArgWithEquals, &ArgV[ArgWithEquals], (PBOOLEAN)TRUE, FALSE, Value)) {
             YoriLibFreeStringContents(Variable);
             return FALSE;
         }

@@ -220,7 +220,7 @@ YoriShExecuteInProc(
         YoriLibCloneString(&NoEscapedArgV[Count], &EscapedArgV[Count]);
     }
 
-    if (!YoriLibShRemoveEscapesFromArgCArgV(ArgC, NoEscapedArgV)) {
+    if (!YoriLibShRemoveEscapesFromArgCArgV(ArgC, NoEscapedArgV, ArgQuotesPresent)) {
         ExitCode = ERROR_OUTOFMEMORY;
         goto Cleanup;
     }

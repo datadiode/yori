@@ -188,7 +188,7 @@ IfFindOffsetOfNextComponentInArgs(
             if (IfFindOffsetOfNextComponent(&TempArgV[ArgIndex], &CharIndex)) {
                 TempArgV[ArgIndex].LengthInChars = CharIndex;
                 ArgIndex++;
-                if (!YoriLibBuildCmdlineFromArgcArgv(ArgIndex, TempArgV, TRUE, TRUE, &TmpCommand)) {
+                if (!YoriLibBuildCmdlineFromArgcArgv(ArgIndex, TempArgV, ArgContainsQuotes, TRUE, &TmpCommand)) {
                     return FALSE;
                 }
                 *FinalArgC = ArgIndex - 1;
@@ -205,7 +205,7 @@ IfFindOffsetOfNextComponentInArgs(
     //  command.
     //
 
-    if (!YoriLibBuildCmdlineFromArgcArgv(ArgIndex, TempArgV, TRUE, TRUE, &TmpCommand)) {
+    if (!YoriLibBuildCmdlineFromArgcArgv(ArgIndex, TempArgV, ArgContainsQuotes, TRUE, &TmpCommand)) {
         return FALSE;
     }
 

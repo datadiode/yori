@@ -364,7 +364,7 @@ ENTRYPOINT(
     YoriLibInitEmptyString(&AllocatedFormatString);
     if (StartArg > 0) {
         DisplayGraph = FALSE;
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], TRUE, FALSE, &AllocatedFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &AllocatedFormatString)) {
             return EXIT_FAILURE;
         }
     } else {

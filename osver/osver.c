@@ -533,7 +533,7 @@ ENTRYPOINT(
     if (StartArg == 0) {
         YoriLibConstantString(&YsFormatString, FormatString);
     } else {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], TRUE, FALSE, &YsFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &YsFormatString)) {
             return EXIT_FAILURE;
         }
     }

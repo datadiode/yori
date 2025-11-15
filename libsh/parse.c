@@ -1284,7 +1284,7 @@ YoriLibShBuildCmdlineFromCmdContext(
         }
 
         for (SrcOffset = DestOffset = 0; SrcOffset < ThisArg->LengthInChars; SrcOffset++, DestOffset++) {
-            if (RemoveEscapes && YoriLibIsEscapeChar(ThisArg->StartOfString[SrcOffset])) {
+            if (RemoveEscapes && !CmdContext->ArgContexts[count].Quoted && YoriLibIsEscapeChar(ThisArg->StartOfString[SrcOffset])) {
                 SrcOffset++;
                 if (SrcOffset < ThisArg->LengthInChars) {
                     String[CmdLineOffset + DestOffset] = ThisArg->StartOfString[SrcOffset];
@@ -1333,7 +1333,8 @@ __success(return)
 BOOLEAN
 YoriLibShRemoveEscapesFromArgCArgV(
     __in YORI_ALLOC_SIZE_T ArgC,
-    __inout PYORI_STRING ArgV
+    __inout PYORI_STRING ArgV,
+    PBOOLEAN ArgQuotesPresent
     )
 {
     YORI_ALLOC_SIZE_T ArgIndex;
@@ -1343,6 +1344,11 @@ YoriLibShRemoveEscapesFromArgCArgV(
     PYORI_STRING ThisArg;
 
     for (ArgIndex = 0; ArgIndex < ArgC; ArgIndex++) {
+
+        if (ArgQuotesPresent && ArgQuotesPresent[ArgIndex]) {
+            continue;
+        }
+
         ThisArg = &ArgV[ArgIndex];
 
         EscapeFound = FALSE;
@@ -1388,41 +1394,6 @@ YoriLibShRemoveEscapesFromArgCArgV(
     }
 
     return TRUE;
-}
-
-/**
- Remove escapes from an existing CmdContext.  This is used before invoking a
- builtin which expects ArgC/ArgV formed arguments, but does not want escapes
- preserved.
-
- @param EscapedCmdContext Pointer to the command context which may contain
-        escapes.
-
- @param NoEscapedCmdContext On successful completion, updated to contain a
-        CmdContext which does not contain escapes.  This may refer to
-        referenced instances of the strings from EscapedCmdContext if no
-        changes needed to be made.
-
- @return TRUE to indicate all escapes were removed, FALSE if not all could
-         be successfully processed.
- */
-__success(return)
-BOOLEAN
-YoriLibShRemoveEscapesFromCmdContext(
-    __in PYORI_LIBSH_CMD_CONTEXT EscapedCmdContext,
-    __out PYORI_LIBSH_CMD_CONTEXT NoEscapedCmdContext
-    )
-{
-    //
-    //  MSFIX: This will perform a memory allocation which could be
-    //  optimized away if no escapes are found
-    //
-
-    if (!YoriLibShCopyCmdContext(NoEscapedCmdContext, EscapedCmdContext)) {
-        return FALSE;
-    }
-
-    return YoriLibShRemoveEscapesFromArgCArgV(NoEscapedCmdContext->ArgC, NoEscapedCmdContext->ArgV);
 }
 
 /**

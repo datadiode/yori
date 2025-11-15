@@ -88,7 +88,7 @@ StartCreateProcess(
     PVOID EnvironmentBlock;
 
     YoriLibInitEmptyString(&CmdLine);
-    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC, ArgV, TRUE, TRUE, &CmdLine)) {
+    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC, ArgV, (PBOOLEAN)TRUE, TRUE, &CmdLine)) {
         return FALSE;
     }
     ASSERT(YoriLibIsStringNullTerminated(&CmdLine));
@@ -202,7 +202,7 @@ StartShellExecute(
 
     YoriLibInitEmptyString(&Args);
     if (ArgC > 1) {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - 1, &ArgV[1], TRUE, TRUE, &Args)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - 1, &ArgV[1], (PBOOLEAN)TRUE, TRUE, &Args)) {
             return FALSE;
         }
         ASSERT(YoriLibIsStringNullTerminated(&Args));

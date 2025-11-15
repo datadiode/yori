@@ -1204,7 +1204,7 @@ ENTRYPOINT(
     YoriLibInitEmptyString(&AllocatedFormatString);
     if (StartArg > 0) {
         DisplayGraph = FALSE;
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], TRUE, FALSE, &AllocatedFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &AllocatedFormatString)) {
             YoriLibFree(CpuInfoContext.ProcInfo);
             return EXIT_FAILURE;
         }

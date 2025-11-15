@@ -83,7 +83,7 @@ Sub RunTest(testinput)
 				If Verbose Then WScript.Echo line
 				On Error Resume Next
 				If YoriStrCmp <> "" Then
-					matched = sh.Run(YoriStrCmp & " " & Replace("-i", "-i", "", 1, Abs(Not re.IgnoreCase)) & " -- " & line & "=~" & Replace(re.pattern, "^", "^^"), 0, True)
+					matched = sh.Run(YoriStrCmp & " " & Replace("-i", "-i", "", 1, Abs(Not re.IgnoreCase)) & " -- " & line & "=~" & re.pattern, 0, True)
 				Else
 					matched = Abs(Not re.Test(line))
 				End If

@@ -794,14 +794,8 @@ __success(return)
 BOOLEAN
 YoriLibShRemoveEscapesFromArgCArgV(
     __in YORI_ALLOC_SIZE_T ArgC,
-    __inout PYORI_STRING ArgV
-    );
-
-__success(return)
-BOOLEAN
-YoriLibShRemoveEscapesFromCmdContext(
-    __in PYORI_LIBSH_CMD_CONTEXT EscapedCmdContext,
-    __out PYORI_LIBSH_CMD_CONTEXT NoEscapedCmdContext
+    __inout PYORI_STRING ArgV,
+    PBOOLEAN ArgQuotesPresent
     );
 
 // vim:sw=4:ts=4:et:

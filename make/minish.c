@@ -151,7 +151,7 @@ MakeShExecuteInProc(
         YoriLibCloneString(&NoEscapedArgV[Count], &EscapedArgV[Count]);
     }
 
-    if (!YoriLibShRemoveEscapesFromArgCArgV(ArgC, NoEscapedArgV)) {
+    if (!YoriLibShRemoveEscapesFromArgCArgV(ArgC, NoEscapedArgV, NULL)) {
         ExitCode = ERROR_OUTOFMEMORY;
         goto Cleanup;
     }

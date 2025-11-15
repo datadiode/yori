@@ -816,7 +816,7 @@ BOOL
 YoriLibBuildCmdlineFromArgcArgv(
     __in YORI_ALLOC_SIZE_T ArgC,
     __in YORI_STRING ArgV[],
-    __in BOOLEAN EncloseInQuotes,
+    __in PBOOLEAN EncloseInQuotes,
     __in BOOLEAN ApplyChildProcessEscapes,
     __out PYORI_STRING CmdLine
     );

@@ -397,7 +397,7 @@ YoriCmd_PUSHD(
         ChdirArgV[1].StartOfString = ArgV[StartArg].StartOfString;
         ChdirArgV[1].LengthInChars = ArgV[StartArg].LengthInChars;
 
-        if (!YoriLibBuildCmdlineFromArgcArgv(2, ChdirArgV, TRUE, TRUE, &ChdirCmd)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(2, ChdirArgV, (PBOOLEAN)TRUE, TRUE, &ChdirCmd)) {
             YoriLibFree(NewStackEntry);
             return EXIT_FAILURE;
         }

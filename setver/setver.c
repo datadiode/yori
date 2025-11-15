@@ -826,7 +826,7 @@ ENTRYPOINT(
         memcpy(&ChildArgs[1], &ArgV[AppArg + 1], (ArgC - AppArg - 1) * sizeof(YORI_STRING));
     }
 
-    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - AppArg, ChildArgs, TRUE, TRUE, &CmdLine)) {
+    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - AppArg, ChildArgs, (PBOOLEAN)TRUE, TRUE, &CmdLine)) {
         YoriLibFreeStringContents(&Executable);
         YoriLibFree(ChildArgs);
         return EXIT_FAILURE;

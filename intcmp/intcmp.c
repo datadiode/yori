@@ -175,7 +175,7 @@ ENTRYPOINT(
         return EXIT_FAILURE;
     }
 
-    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], TRUE, FALSE, &EntireExpression)) {
+    if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &EntireExpression)) {
         return EXIT_FAILURE;
     }
 
