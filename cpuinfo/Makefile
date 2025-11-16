@@ -6,10 +6,10 @@ BINARIES=ycpuinfo.exe
 LINKPDB=/Pdb:ycpuinfo.pdb
 
 BIN_OBJS=\
-	 cpuinfo.obj         \
+	cpuinfo.obj cpufeatures.obj \
 
 MOD_OBJS=\
-	 mcpu.obj     \
+	mcpu.obj cpufeatures.obj \
 
 compile: $(BIN_OBJS) builtins.lib
 

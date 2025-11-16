@@ -27,6 +27,7 @@
 #include <yoripch.h>
 #include <yorilib.h>
 #include <winperf.h>
+#include "cpufeatures.h"
 
 /**
  Help text to display to the user.
@@ -40,6 +41,7 @@ CHAR strCpuInfoHelpText[] =
         "\n"
         "   -a             Display all information\n"
         "   -c             Display information about processor cores\n"
+        "   -f             Display information about processor features\n"
         "   -g             Display information about processor groups\n"
         "   -n             Display information about NUMA nodes\n"
         "   -s             Display information about processor sockets\n"
@@ -739,6 +741,40 @@ CpuInfoDisplaySockets(
     return TRUE;
 }
 
+/**
+ Display processor features.
+
+ @return TRUE to indicate success, FALSE to indicate failure.
+ */
+BOOL
+CpuInfoDisplayFeatures()
+{
+    static const union {
+        char Phrase[sizeof "not supported"];
+        char Not[1][sizeof "not"];
+    } Tag = { "not supported" };
+        
+    CPUFeatures Features;
+    get_cpu_features(&Features);
+
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("Features\n"));
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  NEON      : %hs\n"), Tag.Not[Features.has_neon      != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  ARMCRYPTO : %hs\n"), Tag.Not[Features.has_armcrypto != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  SSE2      : %hs\n"), Tag.Not[Features.has_sse2      != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  SSE3      : %hs\n"), Tag.Not[Features.has_sse3      != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  SSSE3     : %hs\n"), Tag.Not[Features.has_ssse3     != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  SSE4.1    : %hs\n"), Tag.Not[Features.has_sse41     != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  SSE4.2    : %hs\n"), Tag.Not[Features.has_sse42     != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  AVX       : %hs\n"), Tag.Not[Features.has_avx       != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  AVX2      : %hs\n"), Tag.Not[Features.has_avx2      != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  AVX512F   : %hs\n"), Tag.Not[Features.has_avx512f   != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  PCLMUL    : %hs\n"), Tag.Not[Features.has_pclmul    != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  AES-NI    : %hs\n"), Tag.Not[Features.has_aesni     != 0]);
+    YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("  RDRAND    : %hs\n"), Tag.Not[Features.has_rdrand    != 0]);
+
+    return TRUE;
+}
+
 #if defined(_MSC_VER) && (_MSC_VER >= 1500) && (_MSC_VER <= 1600)
 #pragma warning(pop)
 #endif
@@ -1062,6 +1098,7 @@ ENTRYPOINT(
     BOOLEAN DisplayGroups = FALSE;
     BOOLEAN DisplayNuma = FALSE;
     BOOLEAN DisplaySockets = FALSE;
+    BOOLEAN DisplayFeatures = FALSE;
     BOOLEAN DisplayFormatString = TRUE;
     BOOLEAN InsertNewline = FALSE;
     BOOLEAN DisplayGraph = TRUE;
@@ -1069,12 +1106,12 @@ ENTRYPOINT(
     CPUINFO_CONTEXT CpuInfoContext;
     YORI_STRING DisplayString;
     YORI_STRING AllocatedFormatString;
-    LPTSTR DefaultFormatString = _T("Core count: $CORECOUNT$\n")
-                                 _T("Performance core count: $PERFORMANCECORECOUNT$\n")
-                                 _T("Efficiency core count: $EFFICIENCYCORECOUNT$\n")
-                                 _T("Group count: $GROUPCOUNT$\n")
-                                 _T("Logical processors: $LOGICALCOUNT$\n")
-                                 _T("Numa nodes: $NUMANODECOUNT$\n");
+    LPCTSTR DefaultFormatString = _T("Core count: $CORECOUNT$\n")
+                                  _T("Performance core count: $PERFORMANCECORECOUNT$\n")
+                                  _T("Efficiency core count: $EFFICIENCYCORECOUNT$\n")
+                                  _T("Group count: $GROUPCOUNT$\n")
+                                  _T("Logical processors: $LOGICALCOUNT$\n")
+                                  _T("Numa nodes: $NUMANODECOUNT$\n");
 
     ZeroMemory(&CpuInfoContext, sizeof(CpuInfoContext));
     CpuInfoContext.WaitTime = 300;
@@ -1094,11 +1131,16 @@ ENTRYPOINT(
             } else if (YoriLibCompareStringLitIns(&Arg, _T("a")) == 0) {
                 DisplayCores = TRUE;
                 DisplayGroups = TRUE;
+                DisplayFeatures = TRUE;
                 DisplayNuma = TRUE;
                 DisplaySockets = TRUE;
                 ArgumentUnderstood = TRUE;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("c")) == 0) {
                 DisplayCores = TRUE;
+                DisplayFormatString = FALSE;
+                ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("f")) == 0) {
+                DisplayFeatures = TRUE;
                 DisplayFormatString = FALSE;
                 ArgumentUnderstood = TRUE;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("g")) == 0) {
@@ -1170,6 +1212,14 @@ ENTRYPOINT(
 
     if (DisplayCores) {
         CpuInfoDisplayCores(&CpuInfoContext);
+        InsertNewline = TRUE;
+    }
+
+    if (DisplayFeatures) {
+        if (InsertNewline) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("\n"));
+        }
+        CpuInfoDisplayFeatures();
         InsertNewline = TRUE;
     }
 
