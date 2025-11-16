@@ -26,6 +26,7 @@
 
 #include <yoripch.h>
 #include <yorilib.h>
+#include <remimu.hxx>
 
 /**
  Help text to display to the user.
@@ -36,12 +37,13 @@ CHAR strCutHelpText[] =
         "Outputs a portion of an input buffer of text.\n"
         "\n"
         "CUT [-license] [-b] [-s] [-f n] [-d <delimiter chars>] [-o n] [-l n]\n"
-        "    [[-i] -t <text>] [file]\n"
+        "    [[-i] [-e] -t <text>] [file]\n"
         "\n"
         "   -b             Use basic search criteria for files only\n"
         "   -d             The set of characters which delimit fields, default comma\n"
         "   -f n           The field number to cut\n"
         "   -i             Match text case insensitively\n"
+        "   -e             Perform regex match\n"
         "   -l             The length in bytes to cut from the line or field\n"
         "   -o             The offset in bytes to cut from the line or field\n"
         "   -r             Operate on raw file offsets, not lines\n"
@@ -93,6 +95,11 @@ typedef struct _CUT_CONTEXT {
     BOOLEAN CaseInsensitive;
 
     /**
+     TRUE if a regex match should be performed.
+     */
+    BOOL RegexMatch;
+
+    /**
      Start processing the line from any matching text.  If empty, the entire
      line is used.
      */
@@ -138,6 +145,12 @@ typedef struct _CUT_CONTEXT {
      command line argument.
      */
     LONGLONG FilesFoundThisArg;
+
+    /**
+     Regex tokens.
+     */
+    RegexToken tokens[1024];
+    int16_t token_count;
 
 } CUT_CONTEXT, *PCUT_CONTEXT;
 
@@ -186,9 +199,46 @@ CutProcessHandleLines(
 
         if (CutContext->MatchText.LengthInChars > 0) {
             YORI_ALLOC_SIZE_T OffsetOfMatch;
-            BOOLEAN MatchFound;
-            MatchFound = FALSE;
-            if (CutContext->CaseInsensitive) {
+            BOOLEAN MatchFound = FALSE;
+            if (CutContext->RegexMatch) {
+                int offset = 0;
+                const int cbtext = WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
+                char *text;
+
+                if (CutContext->CaseInsensitive && DllUser32.pCharLowerBuffW) {
+                    if (!YoriLibCopyString(&MatchingSubset, &LineString)) {
+                        break;
+                    }
+                    DllUser32.pCharLowerBuffW(MatchingSubset.StartOfString, MatchingSubset.LengthInChars);
+                }
+                text = YoriLibMalloc(cbtext + 1);
+                if (text == NULL) {
+                    break;
+                }
+                WideCharToMultiByte(CP_UTF8, 0, MatchingSubset.StartOfString, MatchingSubset.LengthInChars, text, cbtext, NULL, NULL);
+                text[cbtext] = '\0';
+                OffsetOfMatch = 0;
+                while (offset < cbtext) {
+                    int length;
+
+                    if ((text[offset] & '\xC0') == '\x80') {
+                        ++offset;
+                        continue;
+                    }
+
+                    length = (int)regex_match(CutContext->tokens, text, offset, 0, NULL, NULL);
+                    if (length >= 0) {
+                        MatchFound = TRUE;
+                        break;
+                    }
+                    ++offset;
+                    ++OffsetOfMatch;
+                }
+                YoriLibFreeStringContents(&MatchingSubset);
+                MatchingSubset.StartOfString = LineString.StartOfString;
+                MatchingSubset.LengthInChars = LineString.LengthInChars;
+                YoriLibFree(text);
+            } else if (CutContext->CaseInsensitive) {
                 if (YoriLibFindFirstMatchSubstrIns(&MatchingSubset, 1, &CutContext->MatchText, &OffsetOfMatch)) {
                     MatchFound = TRUE;
                 }
@@ -245,6 +295,7 @@ CutProcessHandleLines(
 
     YoriLibLineReadCloseOrCache(LineContext);
     YoriLibFreeStringContents(&LineString);
+    YoriLibFreeStringContents(&MatchingSubset);
 
     return TRUE;
 }
@@ -633,6 +684,9 @@ ENTRYPOINT(
             } else if (YoriLibCompareStringLitIns(&Arg, _T("i")) == 0) {
                 CutContext.CaseInsensitive = TRUE;
                 ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("e")) == 0) {
+                CutContext.RegexMatch = TRUE;
+                ArgumentUnderstood = TRUE;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("t")) == 0) {
                 if (ArgC > i + 1) {
                     if (CutContext.RawFile) {
@@ -666,6 +720,45 @@ ENTRYPOINT(
     YoriLibCancelEnable(FALSE);
 #endif
 
+    if (CutContext.RegexMatch) {
+        int cbpattern = WideCharToMultiByte(CP_UTF8, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, NULL, 0, NULL, NULL);
+        char* pattern = _alloca(cbpattern + 1);
+
+        if (CutContext.CaseInsensitive)
+        {
+            YoriLibLoadUser32Functions();
+
+            if (DllUser32.pCharLowerBuffW)
+            {
+                YORI_ALLOC_SIZE_T Index;
+                BOOL Escaped = FALSE;
+
+                for (Index = 0; Index < CutContext.MatchText.LengthInChars; ++Index)
+                {
+                    if (Escaped)
+                    {
+                        Escaped = FALSE;
+                    }
+                    else if (CutContext.MatchText.StartOfString[Index] == '\\')
+                    {
+                        Escaped = TRUE;
+                    }
+                    else
+                    {
+                        DllUser32.pCharLowerBuffW(CutContext.MatchText.StartOfString + Index, 1);
+                    }
+                }
+            }
+        }
+
+        WideCharToMultiByte(CP_UTF8, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, pattern, cbpattern, NULL, NULL);
+        pattern[cbpattern] = '\0';
+        CutContext.token_count = 1024;
+        if (regex_parse(pattern, CutContext.tokens, &CutContext.token_count, 0) != 0) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("cut: invalid regex\n"));
+            return EXIT_FAILURE;
+        }
+    }
     //
     //  Attempt to enable backup privilege so an administrator can access more
     //  objects successfully.
