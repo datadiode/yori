@@ -107,8 +107,7 @@ typedef struct _REPL_CONTEXT {
     BOOL Insensitive;
 
     /**
-     TRUE if matches should be applied case insensitively, FALSE if they
-     should be applied case sensitively.
+     TRUE if a regex match should be performed.
      */
     BOOL RegexMatch;
 
@@ -196,10 +195,7 @@ ReplProcessStream(
         if (ReplContext->RegexMatch) {
             int offset = 0;
             const int cbtext = WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
-            char *const text = YoriLibMalloc(cbtext + 1);
-            if (text == NULL) {
-                break;
-            }
+            char *text;
 
             if (ReplContext->Insensitive && DllUser32.pCharLowerBuffW) {
                 SourceString = &AlternateStrings[NextAlternate];
@@ -210,6 +206,10 @@ ReplProcessStream(
                 DllUser32.pCharLowerBuffW(LineString.StartOfString, LineString.LengthInChars);
             }
 
+            text = YoriLibMalloc(cbtext + 1);
+            if (text == NULL) {
+                break;
+            }
             WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, text, cbtext, NULL, NULL);
             text[cbtext] = '\0';
             MatchOffset = 0;
