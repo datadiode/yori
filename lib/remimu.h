@@ -1430,7 +1430,7 @@ REMIMU_FUNC_VISIBILITY ptrdiff_t regex_match(const RegexToken * tokens, const ch
 
 REMIMU_FUNC_VISIBILITY void print_regex_tokens(RegexToken * tokens)
 {
-    const char * kind_to_str[] = {
+    static const char * const kind_to_str[] = {
         "NORMAL",
         "OPEN",
         "NCOPEN",
@@ -1442,7 +1442,7 @@ REMIMU_FUNC_VISIBILITY void print_regex_tokens(RegexToken * tokens)
         "NBOUND",
         "END",
     };
-    const char * mode_to_str[] = {
+    static const char * const mode_to_str[] = {
         "GREEDY",
         "POSSESS",
         "LAZY",

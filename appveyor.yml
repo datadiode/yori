@@ -1,17 +1,12 @@
-image:
-  - Visual Studio 2015
-  - Visual Studio 2019
-
-platform:
-  - x86
-  - x64
-
-matrix:
-  exclude:
-    - image: Visual Studio 2015
-      platform: x64
-    - image: Visual Studio 2019
+environment:
+  matrix:
+    - job_name: x86
       platform: x86
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    - job_name: x64
+      platform: x64
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      job_depends_on: x86
 
 build_script:
   - ps: |
@@ -25,7 +20,7 @@ build_script:
           Invoke-RestMethod -ErrorAction Continue -Method Get -Uri "https://ci.appveyor.com/api/buildjobs/$jobId/artifacts/pkg%2Fout%2Fpkglist.ini" -OutFile ".\pkg\out\pkglist.ini" -Headers $headers
         } catch { }
       }
-  - if %PLATFORM:X=x%==x86 call "%VS90COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
+  - if %PLATFORM:X=x%==x86 call "%VS100COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x%
   - if %PLATFORM:X=x%==x64 call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM:X=x% 8.1
   - C:/msys64/usr/bin/wget -nv -O %WINDIR%\bsdtar.exe "https://github.com/aspect-build/bsdtar-prebuilt/releases/download/v3.8.1-fix.1/tar_windows_x86_64.exe"
   - C:/msys64/usr/bin/wget -nv -O %TEMP%\perc-bin.zip "https://github.com/avih/perc/releases/download/v0.1/perc.v0.1.zip"
@@ -59,7 +54,7 @@ for:
 -
   matrix:
     only:
-      - image: Visual Studio 2019
+      - platform: x64
 
   test_script:
     - type "%APPVEYOR_BUILD_FOLDER%\test\yoritest.xml"

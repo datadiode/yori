@@ -15,11 +15,7 @@
 // See also: https://docs.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex
 //
 #include <stddef.h>
-#ifdef _MSC_VER
-typedef unsigned int uint32_t;
-#else
 #include <stdint.h>
-#endif
 
 #ifdef HAVE_ANDROID_GETCPUFEATURES
 # include <cpu-features.h>
