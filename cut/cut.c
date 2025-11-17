@@ -174,6 +174,7 @@ CutProcessHandleLines(
     PVOID LineContext = NULL;
     YORI_STRING LineString;
     YORI_ALLOC_SIZE_T DesiredOffset;
+    YORI_ALLOC_SIZE_T ReverseOffset;
     YORI_ALLOC_SIZE_T DesiredLength;
 
     //
@@ -182,7 +183,8 @@ CutProcessHandleLines(
     //  unrealistic that anyone would actually want to support one.
     //  
 
-    DesiredOffset = (YORI_ALLOC_SIZE_T)CutContext->DesiredOffset;
+    DesiredOffset = (YORI_ALLOC_SIZE_T)((LONGLONG)CutContext->DesiredOffset > 0 ? (LONGLONG)CutContext->DesiredOffset : 0);
+    ReverseOffset = (YORI_ALLOC_SIZE_T)((LONGLONG)CutContext->DesiredOffset < 0 ? -(LONGLONG)CutContext->DesiredOffset : 0);
     DesiredLength = (YORI_ALLOC_SIZE_T)CutContext->DesiredLength;
 
     YoriLibInitEmptyString(&LineString);
@@ -211,6 +213,7 @@ CutProcessHandleLines(
                     }
                     DllUser32.pCharLowerBuffW(MatchingSubset.StartOfString, MatchingSubset.LengthInChars);
                 }
+
                 text = YoriLibMalloc(cbtext + 1);
                 if (text == NULL) {
                     break;
@@ -249,8 +252,15 @@ CutProcessHandleLines(
             }
 
             if (MatchFound) {
-                MatchingSubset.StartOfString = &MatchingSubset.StartOfString[OffsetOfMatch];
-                MatchingSubset.LengthInChars = (YORI_ALLOC_SIZE_T)(MatchingSubset.LengthInChars - OffsetOfMatch);
+                if (CutContext->DesiredOffset != MINLONGLONG) {
+                    if (OffsetOfMatch >= ReverseOffset) {
+                        OffsetOfMatch -= ReverseOffset;
+                        MatchingSubset.StartOfString = &MatchingSubset.StartOfString[OffsetOfMatch];
+                        MatchingSubset.LengthInChars = (YORI_ALLOC_SIZE_T)(MatchingSubset.LengthInChars - OffsetOfMatch);
+                    } else { 
+                        MatchingSubset.LengthInChars = 0;
+                    }
+                }
             } else {
                 MatchingSubset.LengthInChars = 0;
             }
@@ -634,6 +644,9 @@ ENTRYPOINT(
             } else if (YoriLibCompareStringLitIns(&Arg, _T("o")) == 0) {
                 if (ArgC > i + 1) {
                     if (YoriLibStringToNumber(&ArgV[i + 1], TRUE, &Temp, &CharsConsumed)) {
+                        if (Temp == 0 && ArgV[i + 1].StartOfString[0] == '-') {
+                            Temp = MINLONGLONG; // Reserve MINLONGLONG to represent negative zero
+                        }
                         CutContext.DesiredOffset = Temp;
                         ArgumentUnderstood = TRUE;
                         i++;
@@ -759,6 +772,7 @@ ENTRYPOINT(
             return EXIT_FAILURE;
         }
     }
+
     //
     //  Attempt to enable backup privilege so an administrator can access more
     //  objects successfully.
