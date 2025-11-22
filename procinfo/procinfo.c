@@ -540,7 +540,7 @@ ENTRYPOINT(
     CloseHandle(hProcess);
 
     YoriLibInitEmptyString(&DisplayString);
-    YoriLibExpandCommandVariables(&AllocatedFormatString, '$', FALSE, ProcInfoExpandVariables, &ProcInfoContext, &DisplayString);
+    YoriLibExpandCommandVariables(&AllocatedFormatString, '$', ProcInfoExpandVariables, &ProcInfoContext, &DisplayString);
     if (DisplayString.StartOfString != NULL) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
         YoriLibFreeStringContents(&DisplayString);

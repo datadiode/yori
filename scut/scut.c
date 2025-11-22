@@ -1157,7 +1157,7 @@ ENTRYPOINT(
         ExpandContext.ConsoleProperties = ConsoleProps;
         ExpandContext.MsiProperties = MsiProps;
         ExpandContext.MsiTarget = &szMsiTarget;
-        YoriLibExpandCommandVariables(&FormatString, '$', FALSE, ScutExpandVariables, &ExpandContext, &DisplayString);
+        YoriLibExpandCommandVariables(&FormatString, '$', ScutExpandVariables, &ExpandContext, &DisplayString);
 
         if (DisplayString.StartOfString != NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
@@ -1175,7 +1175,7 @@ ENTRYPOINT(
 
             YoriLibConstantString(&TempFormatString, ScutInstallerFormatString);
             DisplayString.LengthInChars = 0;
-            YoriLibExpandCommandVariables(&TempFormatString, '$', FALSE, ScutExpandVariables, &ExpandContext, &DisplayString);
+            YoriLibExpandCommandVariables(&TempFormatString, '$', ScutExpandVariables, &ExpandContext, &DisplayString);
 
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
@@ -1194,7 +1194,7 @@ ENTRYPOINT(
 
             YoriLibConstantString(&TempFormatString, ScutConsoleFormatString);
             DisplayString.LengthInChars = 0;
-            YoriLibExpandCommandVariables(&TempFormatString, '$', FALSE, ScutExpandVariables, &ExpandContext, &DisplayString);
+            YoriLibExpandCommandVariables(&TempFormatString, '$', ScutExpandVariables, &ExpandContext, &DisplayString);
 
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
@@ -1204,7 +1204,7 @@ ENTRYPOINT(
 
             YoriLibConstantString(&TempFormatString, ScutConsoleFormatString2);
             DisplayString.LengthInChars = 0;
-            YoriLibExpandCommandVariables(&TempFormatString, '$', FALSE, ScutExpandVariables, &ExpandContext, &DisplayString);
+            YoriLibExpandCommandVariables(&TempFormatString, '$', ScutExpandVariables, &ExpandContext, &DisplayString);
 
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);

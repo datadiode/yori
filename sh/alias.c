@@ -295,7 +295,7 @@ YoriShExpandAlias(
     ExistingAlias = HashEntry->Context;
 
     YoriLibInitEmptyString(&NewCmdString);
-    YoriLibExpandCommandVariables(&ExistingAlias->Value, '$', TRUE, YoriShExpandAliasHelper, CmdContext, &NewCmdString);
+    YoriLibExpandCommandVariables(&ExistingAlias->Value, '$', YoriShExpandAliasHelper, CmdContext, &NewCmdString);
     if (NewCmdString.LengthInChars > 0) {
         if (YoriLibShParseCmdlineToCmdContext(&NewCmdString, 0, &NewCmdContext) &&
             NewCmdContext.ArgC > 0) {

@@ -132,7 +132,7 @@ ENTRYPOINT(
         YoriLibFreeStringContents(&PreviousTitle);
 
     } else {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &CmdLine)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], FALSE, FALSE, &CmdLine)) {
             return EXIT_FAILURE;
         }
         ASSERT(YoriLibIsStringNullTerminated(&CmdLine));

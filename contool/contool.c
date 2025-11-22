@@ -489,7 +489,7 @@ ENTRYPOINT(
         //
 
         if (YsFormatString.StartOfString != NULL) {
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, ConToolExpandVariables, &ConToolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', ConToolExpandVariables, &ConToolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
                 YoriLibFreeStringContents(&DisplayString);
@@ -504,7 +504,7 @@ ENTRYPOINT(
                               _T("Window width:         $window_x$\n")
                               _T("Window height:        $window_y$\n");
                 YoriLibConstantString(&YsFormatString, FormatString);
-                YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, ConToolExpandVariables, &ConToolResult, &DisplayString);
+                YoriLibExpandCommandVariables(&YsFormatString, '$', ConToolExpandVariables, &ConToolResult, &DisplayString);
                 if (DisplayString.StartOfString != NULL) {
                     YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
                 }
@@ -518,7 +518,7 @@ ENTRYPOINT(
                               _T("Font name:            $font$\n")
                               _T("Font weight:          $font_weight$\n");
                 YoriLibConstantString(&YsFormatString, FormatString);
-                YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, ConToolExpandVariables, &ConToolResult, &DisplayString);
+                YoriLibExpandCommandVariables(&YsFormatString, '$', ConToolExpandVariables, &ConToolResult, &DisplayString);
                 if (DisplayString.StartOfString != NULL) {
                     YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
                 }
@@ -528,7 +528,7 @@ ENTRYPOINT(
                 LPTSTR FormatString = 
                               _T("Full screen:          $fullscreen$\n");
                 YoriLibConstantString(&YsFormatString, FormatString);
-                YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, ConToolExpandVariables, &ConToolResult, &DisplayString);
+                YoriLibExpandCommandVariables(&YsFormatString, '$', ConToolExpandVariables, &ConToolResult, &DisplayString);
                 if (DisplayString.StartOfString != NULL) {
                     YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
                 }

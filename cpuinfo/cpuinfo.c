@@ -1254,7 +1254,7 @@ ENTRYPOINT(
     YoriLibInitEmptyString(&AllocatedFormatString);
     if (StartArg > 0) {
         DisplayGraph = FALSE;
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &AllocatedFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], FALSE, FALSE, &AllocatedFormatString)) {
             YoriLibFree(CpuInfoContext.ProcInfo);
             return EXIT_FAILURE;
         }
@@ -1293,7 +1293,7 @@ ENTRYPOINT(
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("\n"));
         }
         YoriLibInitEmptyString(&DisplayString);
-        YoriLibExpandCommandVariables(&AllocatedFormatString, '$', FALSE, CpuInfoExpandVariables, &CpuInfoContext, &DisplayString);
+        YoriLibExpandCommandVariables(&AllocatedFormatString, '$', CpuInfoExpandVariables, &CpuInfoContext, &DisplayString);
         if (DisplayString.StartOfString != NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             YoriLibFreeStringContents(&DisplayString);

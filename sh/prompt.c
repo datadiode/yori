@@ -291,7 +291,7 @@ YoriShDisplayPrompt(VOID)
         //  Expand any prompt command variables.
         //
 
-        YoriLibExpandCommandVariables(StringToUse, '$', FALSE, YoriShExpandPrompt, NULL, &DisplayString);
+        YoriLibExpandCommandVariables(StringToUse, '$', YoriShExpandPrompt, NULL, &DisplayString);
 
         //
         //  Display the result.
@@ -397,7 +397,7 @@ YoriShDisplayPrompt(VOID)
         //  Expand any prompt command variables.
         //
 
-        YoriLibExpandCommandVariables(StringToUse, '$', FALSE, YoriShExpandPrompt, NULL, &DisplayString);
+        YoriLibExpandCommandVariables(StringToUse, '$', YoriShExpandPrompt, NULL, &DisplayString);
 
         //
         //  Display the result.

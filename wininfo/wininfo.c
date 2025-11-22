@@ -243,7 +243,7 @@ ENTRYPOINT(
     if (YsFormatString.StartOfString == NULL) {
         YoriLibConstantString(&YsFormatString, FormatString);
     }
-    YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, WinInfoExpandVariables, &Context, &DisplayString);
+    YoriLibExpandCommandVariables(&YsFormatString, '$', WinInfoExpandVariables, &Context, &DisplayString);
     if (DisplayString.StartOfString != NULL) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
         YoriLibFreeStringContents(&DisplayString);

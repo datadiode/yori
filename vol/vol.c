@@ -753,7 +753,7 @@ ENTRYPOINT(
     //
 
     if (YsFormatString.StartOfString != NULL) {
-        YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+        YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
         if (DisplayString.StartOfString != NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             YoriLibFreeStringContents(&DisplayString);
@@ -768,7 +768,7 @@ ENTRYPOINT(
                           _T("Longest file name:    $maxfilename$\n")
                           _T("Serial number:        $serial$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -779,7 +779,7 @@ ENTRYPOINT(
                           _T("Free space (bytes):   $free$\n")
                           _T("Size (bytes):         $size$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -790,7 +790,7 @@ ENTRYPOINT(
                           _T("Cluster size:         $clustersize$\n")
                           _T("Sector size:          $sectorsize$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -800,7 +800,7 @@ ENTRYPOINT(
             LPTSTR FormatString = 
                           _T("Physical sector size: $physicalsectorsize$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -815,7 +815,7 @@ ENTRYPOINT(
                           _T("Maximum USN value:    $usnmax$\n")
                           _T("Maximum journal size: $usnmaxallocated$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -825,7 +825,7 @@ ENTRYPOINT(
             LPTSTR FormatString = 
                           _T("Full serial number:   $fullserial$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -835,7 +835,7 @@ ENTRYPOINT(
             LPTSTR FormatString = 
                           _T("Reserved bytes:       $reserved$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -846,7 +846,7 @@ ENTRYPOINT(
                           _T("File record size:     $filerecordsize$\n")
                           _T("MFT size:             $mftsize$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -856,7 +856,7 @@ ENTRYPOINT(
             LPTSTR FormatString = 
                           _T("First cluster offset: $firstclusteroffset$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }
@@ -868,7 +868,7 @@ ENTRYPOINT(
                           _T("Disk offset:          $diskoffset$\n")
                           _T("Partition size:       $partitionsize$\n");
             YoriLibConstantString(&YsFormatString, FormatString);
-            YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VolExpandVariables, &VolResult, &DisplayString);
+            YoriLibExpandCommandVariables(&YsFormatString, '$', VolExpandVariables, &VolResult, &DisplayString);
             if (DisplayString.StartOfString != NULL) {
                 YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             }

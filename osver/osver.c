@@ -533,7 +533,7 @@ ENTRYPOINT(
     if (StartArg == 0) {
         YoriLibConstantString(&YsFormatString, FormatString);
     } else {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &YsFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], FALSE, FALSE, &YsFormatString)) {
             return EXIT_FAILURE;
         }
     }
@@ -541,7 +541,7 @@ ENTRYPOINT(
     YoriLibInitEmptyString(&DisplayString);
     YoriLibGetOsVersion(&VersionResult.MajorVersion, &VersionResult.MinorVersion, &VersionResult.BuildNumber);
     OsVerGetArchitecture(&VersionResult);
-    YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, OsVerExpandVariables, &VersionResult, &DisplayString);
+    YoriLibExpandCommandVariables(&YsFormatString, '$', OsVerExpandVariables, &VersionResult, &DisplayString);
     if (DisplayString.StartOfString != NULL) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
         YoriLibFreeStringContents(&DisplayString);

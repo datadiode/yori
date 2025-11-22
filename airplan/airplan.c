@@ -225,7 +225,7 @@ ENTRYPOINT(
 
     YoriLibInitEmptyString(&AllocatedFormatString);
     if (StartArg > 0) {
-        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], (PBOOLEAN)TRUE, FALSE, &AllocatedFormatString)) {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], FALSE, FALSE, &AllocatedFormatString)) {
             return EXIT_FAILURE;
         }
     } else {
@@ -239,7 +239,7 @@ ENTRYPOINT(
         //
 
         YoriLibInitEmptyString(&DisplayString);
-        YoriLibExpandCommandVariables(&AllocatedFormatString, '$', FALSE, AirplaneExpandVariables, &AirplaneContext, &DisplayString);
+        YoriLibExpandCommandVariables(&AllocatedFormatString, '$', AirplaneExpandVariables, &AirplaneContext, &DisplayString);
         if (DisplayString.StartOfString != NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
             YoriLibFreeStringContents(&DisplayString);

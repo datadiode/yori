@@ -1123,7 +1123,7 @@ YsExecuteScript(
         if (CurrentLine->LineContents.LengthInChars > 1 &&
             CurrentLine->LineContents.StartOfString[0] != ':') {
 
-            if (!YoriLibExpandCommandVariables(&CurrentLine->LineContents, '%', TRUE, YsExpandArgumentVariables, Script->ArgContext, &LineWithArgumentsExpanded)) {
+            if (!YoriLibExpandCommandVariables(&CurrentLine->LineContents, '%', YsExpandArgumentVariables, Script->ArgContext, &LineWithArgumentsExpanded)) {
                 break;
             }
 

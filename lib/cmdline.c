@@ -282,9 +282,6 @@ YoriLibBuildCmdlineFromArgcArgv(
 
  @param MatchChar The character to use to delimit the variable being expanded.
 
- @param PreserveEscapes If TRUE, escape characters (^) are preserved in the
-        output; if FALSE, they are removed from the output.
-
  @param Function The callback function to invoke when variables are found.
 
  @param Context A caller provided context to pass to the callback function.
@@ -300,7 +297,6 @@ BOOL
 YoriLibExpandCommandVariables(
     __in PYORI_STRING String,
     __in TCHAR MatchChar,
-    __in BOOLEAN PreserveEscapes,
     __in PYORILIB_VARIABLE_EXPAND_FN Function,
     __in_opt PVOID Context,
     __inout PYORI_STRING ExpandedString
@@ -313,7 +309,6 @@ YoriLibExpandCommandVariables(
     YORI_STRING CmdString;
     YORI_STRING DestString;
     YORI_ALLOC_SIZE_T LengthNeeded;
-    YORI_ALLOC_SIZE_T IgnoreUntil;
 
     if (ExpandedString->LengthAllocated < 256) {
         YoriLibFreeStringContents(ExpandedString);
@@ -322,39 +317,31 @@ YoriLibExpandCommandVariables(
         }
     }
     DestIndex = 0;
-    IgnoreUntil = 0;
 
     for (Index = 0; Index < String->LengthInChars; Index++) {
         Processed = FALSE;
 
-        if (Index >= IgnoreUntil && YoriLibIsEscapeChar(String->StartOfString[Index])) {
-            IgnoreUntil = (YORI_ALLOC_SIZE_T)(Index + 2);
-            if (!PreserveEscapes) {
-                continue;
-            }
-        }
-
-        if (Index >= IgnoreUntil && String->StartOfString[Index] == MatchChar) {
-            FinalIndex = (YORI_ALLOC_SIZE_T)(Index + 1);
+        if (String->StartOfString[Index] == MatchChar) {
+            FinalIndex = ++Index;
             while (FinalIndex < String->LengthInChars && String->StartOfString[FinalIndex] != MatchChar) {
                 FinalIndex++;
             }
 
             YoriLibInitEmptyString(&CmdString);
-            CmdString.StartOfString = &String->StartOfString[Index + 1];
+            CmdString.StartOfString = &String->StartOfString[Index];
             CmdString.LengthAllocated = 
-            CmdString.LengthInChars = (YORI_ALLOC_SIZE_T)(FinalIndex - Index - 1);
+            CmdString.LengthInChars = FinalIndex - Index;
 
-            while (TRUE) {
+            while (CmdString.LengthInChars) {
                 YoriLibInitEmptyString(&DestString);
                 DestString.StartOfString = &ExpandedString->StartOfString[DestIndex];
-                DestString.LengthAllocated = (YORI_ALLOC_SIZE_T)(ExpandedString->LengthAllocated - DestIndex - 1);
+                DestString.LengthAllocated = ExpandedString->LengthAllocated - DestIndex - 1;
 
                 LengthNeeded = Function(&DestString, &CmdString, Context);
 
                 if (LengthNeeded <= (ExpandedString->LengthAllocated - DestIndex - 1)) {
                     Processed = TRUE;
-                    DestIndex = (YORI_ALLOC_SIZE_T)(DestIndex + LengthNeeded);
+                    DestIndex = DestIndex + LengthNeeded;
                     Index = FinalIndex;
                     break;
                 } else {

@@ -522,7 +522,7 @@ ENTRYPOINT(
         }
 
         YoriLibInitEmptyString(&DisplayString);
-        YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, PathExpandVariables, &PathComponents, &DisplayString);
+        YoriLibExpandCommandVariables(&YsFormatString, '$', PathExpandVariables, &PathComponents, &DisplayString);
         YoriLibFreeStringContents(&PathComponents.EntireNaturalPath);
         if (DisplayString.StartOfString != NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y\n"), &DisplayString);

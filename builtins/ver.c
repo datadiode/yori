@@ -241,13 +241,12 @@ YoriCmd_VER(
         }
     }
 
-    if (StartArg > 0) {
-        YoriLibInitEmptyString(&YsFormatString);
-        YsFormatString.StartOfString = ArgV[StartArg].StartOfString;
-        YsFormatString.LengthInChars = ArgV[StartArg].LengthInChars;
-        YsFormatString.LengthAllocated = ArgV[StartArg].LengthAllocated;
-    } else {
+    if (StartArg == 0) {
         YoriLibConstantString(&YsFormatString, FormatString);
+    } else {
+        if (!YoriLibBuildCmdlineFromArgcArgv(ArgC - StartArg, &ArgV[StartArg], FALSE, FALSE, &YsFormatString)) {
+            return EXIT_FAILURE;
+        }
     }
 
     YoriCallGetYoriVersion(&VersionResult.ShMajorVersion, &VersionResult.ShMinorVersion);
@@ -255,7 +254,7 @@ YoriCmd_VER(
     VersionResult.LibMinorVersion = YORI_VER_MINOR;
 
     YoriLibInitEmptyString(&DisplayString);
-    YoriLibExpandCommandVariables(&YsFormatString, '$', FALSE, VerExpandVariables, &VersionResult, &DisplayString);
+    YoriLibExpandCommandVariables(&YsFormatString, '$', VerExpandVariables, &VersionResult, &DisplayString);
     if (DisplayString.StartOfString != NULL) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
         YoriLibFreeStringContents(&DisplayString);

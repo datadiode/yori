@@ -845,7 +845,6 @@ BOOL
 YoriLibExpandCommandVariables(
     __in PYORI_STRING String,
     __in TCHAR MatchChar,
-    __in BOOLEAN PreserveEscapes,
     __in PYORILIB_VARIABLE_EXPAND_FN Function,
     __in_opt PVOID Context,
     __inout PYORI_STRING ExpandedString
