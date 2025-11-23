@@ -28,9 +28,10 @@ build_script:
   - bsdtar -xf %TEMP%\perc-bin.zip --strip-components=1 -C %WINDIR% *%PLATFORM:~-2%/perc.exe
   - bsdtar -xf %TEMP%\yori-bin.zip --strip-components=2 -C %WINDIR% */amd64/oneyori.exe */amd64/ymake.exe */amd64/ypm.exe
   - for /f %%v in ('git describe') do set VERSION=%%v
+  - for /f "tokens=2 delims=-" %%b in ('git describe') do set BUILDID=%%b
   - 'echo builtin alias -s ver=for x in ("Fork: github.com/%APPVEYOR_REPO_NAME%" "Fork version: %VERSION%" "Upstream: github.com/malxau/yori" .) do if builtin strcmp -- "x==." ; builtin ver $*$ ; builtin echo -- x >> sh\YoriInit.d\Typical.ys1'
   - cd "%APPVEYOR_BUILD_FOLDER%\pkg"
-  - oneyori.exe /c bld.ys1 "%APPVEYOR_REPO_BRANCH:stable=official%" "%VERSION%-%APPVEYOR_REPO_BRANCH%"
+  - oneyori.exe /c bld.ys1 "%BUILDID%" "%VERSION%-%APPVEYOR_REPO_BRANCH%"
   - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%PLATFORM:X=x%.exe"
   - for /d %%d in (out\*) do copy %%d\ysetup.exe "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
   - copy out\yori-*.cab "%APPVEYOR_BUILD_FOLDER%"
