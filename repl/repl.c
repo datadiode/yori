@@ -127,6 +127,11 @@ typedef struct _REPL_CONTEXT {
     PYORI_STRING NewString;
 
     /**
+     Encoding to use.
+     */
+    DWORD EncodingToUse;
+
+    /**
      Regex tokens.
      */
     RegexToken tokens[1024];
@@ -194,7 +199,7 @@ ReplProcessStream(
 
         if (ReplContext->RegexMatch) {
             int offset = 0;
-            const int cbtext = WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
+            const int cbtext = WideCharToMultiByte(ReplContext->EncodingToUse, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
             char *text;
 
             if (ReplContext->Insensitive && DllUser32.pCharLowerBuffW) {
@@ -210,7 +215,7 @@ ReplProcessStream(
             if (text == NULL) {
                 break;
             }
-            WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, text, cbtext, NULL, NULL);
+            WideCharToMultiByte(ReplContext->EncodingToUse, 0, LineString.StartOfString, LineString.LengthInChars, text, cbtext, NULL, NULL);
             text[cbtext] = '\0';
             MatchOffset = 0;
             while (offset < cbtext) {
@@ -573,6 +578,7 @@ ENTRYPOINT(
     YORI_STRING EmptyString;
 
     ZeroMemory(&ReplContext, sizeof(ReplContext));
+    ReplContext.EncodingToUse = YoriLibGetUsableEncoding();
 
     for (i = 1; i < ArgC; i++) {
 
@@ -633,7 +639,7 @@ ENTRYPOINT(
     }
 
     if (ReplContext.RegexMatch) {
-        int cbpattern = WideCharToMultiByte(CP_UTF8, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, NULL, 0, NULL, NULL);
+        int cbpattern = WideCharToMultiByte(ReplContext.EncodingToUse, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, NULL, 0, NULL, NULL);
         char* pattern = _alloca(cbpattern + 1);
 
         if (ReplContext.Insensitive)
@@ -663,7 +669,7 @@ ENTRYPOINT(
             }
         }
 
-        WideCharToMultiByte(CP_UTF8, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, pattern, cbpattern, NULL, NULL);
+        WideCharToMultiByte(ReplContext.EncodingToUse, 0, ReplContext.MatchString->StartOfString, ReplContext.MatchString->LengthInChars, pattern, cbpattern, NULL, NULL);
         pattern[cbpattern] = '\0';
         ReplContext.token_count = 1024;
         if (regex_parse(pattern, ReplContext.tokens, &ReplContext.token_count, 0) != 0) {

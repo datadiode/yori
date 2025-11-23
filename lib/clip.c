@@ -71,6 +71,31 @@ static const CHAR YoriLibClipDummyFragEnd[] =
 #define HTMLCLIP_FRAGEND_SIZE (sizeof(YoriLibClipDummyFragEnd)-1)
 
 /**
+ Get a preferably lossless encoding which is supported by the OS.
+ */
+DWORD
+YoriLibGetUsableEncoding(VOID)
+{
+    static DWORD EncodingToUse = CP_UTF7; // CP_UTF7 means we don't know yet ;)
+
+    if (EncodingToUse == CP_UTF7) {
+        DWORD WinMajorVer;
+        DWORD WinMinorVer;
+        DWORD BuildNumber;
+
+        YoriLibGetOsVersion(&WinMajorVer, &WinMinorVer, &BuildNumber);
+
+        if (WinMajorVer < 4) {
+            EncodingToUse = CP_OEMCP;
+        } else {
+            EncodingToUse = CP_UTF8;
+        }
+    }
+
+    return EncodingToUse;
+}
+
+/**
  Attempt to open the clipboard with some retries in case it is currently in
  use.
 
@@ -137,23 +162,13 @@ YoriLibBuildHtmlClipboardBuffer(
     DWORD BytesNeeded;
     DWORD Return;
 
-    DWORD WinMajorVer;
-    DWORD WinMinorVer;
-    DWORD BuildNumber;
-
     if (DllKernel32.pGlobalLock == NULL ||
         DllKernel32.pGlobalUnlock == NULL) {
 
         return FALSE;
     }
 
-    YoriLibGetOsVersion(&WinMajorVer, &WinMinorVer, &BuildNumber);
-
-    if (WinMajorVer < 4) {
-        EncodingToUse = CP_OEMCP;
-    } else {
-        EncodingToUse = CP_UTF8;
-    }
+    EncodingToUse = YoriLibGetUsableEncoding();
 
     UserBytes = WideCharToMultiByte(EncodingToUse, 0, TextToCopy->StartOfString, TextToCopy->LengthInChars, NULL, 0, NULL, NULL);
     if (UserBytes == 0) {

@@ -147,6 +147,11 @@ typedef struct _CUT_CONTEXT {
     LONGLONG FilesFoundThisArg;
 
     /**
+     Encoding to use.
+     */
+    DWORD EncodingToUse;
+
+    /**
      Regex tokens.
      */
     RegexToken tokens[1024];
@@ -204,7 +209,7 @@ CutProcessHandleLines(
             BOOLEAN MatchFound = FALSE;
             if (CutContext->RegexMatch) {
                 int offset = 0;
-                const int cbtext = WideCharToMultiByte(CP_UTF8, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
+                const int cbtext = WideCharToMultiByte(CutContext->EncodingToUse, 0, LineString.StartOfString, LineString.LengthInChars, NULL, 0, NULL, NULL);
                 char *text;
 
                 if (CutContext->CaseInsensitive && DllUser32.pCharLowerBuffW) {
@@ -218,7 +223,7 @@ CutProcessHandleLines(
                 if (text == NULL) {
                     break;
                 }
-                WideCharToMultiByte(CP_UTF8, 0, MatchingSubset.StartOfString, MatchingSubset.LengthInChars, text, cbtext, NULL, NULL);
+                WideCharToMultiByte(CutContext->EncodingToUse, 0, MatchingSubset.StartOfString, MatchingSubset.LengthInChars, text, cbtext, NULL, NULL);
                 text[cbtext] = '\0';
                 OffsetOfMatch = 0;
                 while (offset < cbtext) {
@@ -625,6 +630,7 @@ ENTRYPOINT(
     DWORD Result;
 
     ZeroMemory(&CutContext, sizeof(CutContext));
+    CutContext.EncodingToUse = YoriLibGetUsableEncoding();
 
     for (i = 1; i < ArgC; i++) {
 
@@ -734,7 +740,7 @@ ENTRYPOINT(
 #endif
 
     if (CutContext.RegexMatch) {
-        int cbpattern = WideCharToMultiByte(CP_UTF8, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, NULL, 0, NULL, NULL);
+        int cbpattern = WideCharToMultiByte(CutContext.EncodingToUse, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, NULL, 0, NULL, NULL);
         char* pattern = _alloca(cbpattern + 1);
 
         if (CutContext.CaseInsensitive)
@@ -764,7 +770,7 @@ ENTRYPOINT(
             }
         }
 
-        WideCharToMultiByte(CP_UTF8, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, pattern, cbpattern, NULL, NULL);
+        WideCharToMultiByte(CutContext.EncodingToUse, 0, CutContext.MatchText.StartOfString, CutContext.MatchText.LengthInChars, pattern, cbpattern, NULL, NULL);
         pattern[cbpattern] = '\0';
         CutContext.token_count = 1024;
         if (regex_parse(pattern, CutContext.tokens, &CutContext.token_count, 0) != 0) {

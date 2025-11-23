@@ -372,18 +372,20 @@ YoriLibRegexMatch(
     __in PCYORI_STRING Pattern
     )
 {
+    const DWORD EncodingToUse = YoriLibGetUsableEncoding();
+
     RegexToken tokens[1024];
     int16_t token_count = 1024;
     ptrdiff_t ec;
 
     int offset = 0;
-    int cbtext = WideCharToMultiByte(CP_UTF8, 0, Text->StartOfString, Text->LengthInChars, NULL, 0, NULL, NULL);
+    int cbtext = WideCharToMultiByte(EncodingToUse, 0, Text->StartOfString, Text->LengthInChars, NULL, 0, NULL, NULL);
     char *text = _alloca(cbtext + 1);
-    int cbpattern = WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, NULL, 0, NULL, NULL);
+    int cbpattern = WideCharToMultiByte(EncodingToUse, 0, Pattern->StartOfString, Pattern->LengthInChars, NULL, 0, NULL, NULL);
     char *pattern = _alloca(cbpattern + 1);
-    WideCharToMultiByte(CP_UTF8, 0, Text->StartOfString, Text->LengthInChars, text, cbtext, NULL, NULL);
+    WideCharToMultiByte(EncodingToUse, 0, Text->StartOfString, Text->LengthInChars, text, cbtext, NULL, NULL);
     text[cbtext] = '\0';
-    WideCharToMultiByte(CP_UTF8, 0, Pattern->StartOfString, Pattern->LengthInChars, pattern, cbpattern, NULL, NULL);
+    WideCharToMultiByte(EncodingToUse, 0, Pattern->StartOfString, Pattern->LengthInChars, pattern, cbpattern, NULL, NULL);
     pattern[cbpattern] = '\0';
 
     ec = regex_parse(pattern, tokens, &token_count, 0);

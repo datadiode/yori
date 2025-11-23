@@ -720,6 +720,9 @@ YoriLibSetInputConsoleModeWithoutExtended(
 
 // *** CLIP.C ***
 
+DWORD
+YoriLibGetUsableEncoding(VOID);
+
 BOOLEAN
 YoriLibOpenClipboard(VOID);
 
