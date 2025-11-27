@@ -106,7 +106,7 @@ YoriLibOpenClipboard(VOID)
 {
     DWORD Attempt;
 
-    if (DllUser32.pOpenClipboard == NULL) {
+    if (DllUser32.pOpenClipboard == NULL || DllUser32.pGetDesktopWindow == NULL) {
         return FALSE;
     }
 
@@ -115,7 +115,7 @@ YoriLibOpenClipboard(VOID)
             Sleep(1<<Attempt);
         }
 
-        if (DllUser32.pOpenClipboard(NULL)) {
+        if (DllUser32.pOpenClipboard(DllUser32.pGetDesktopWindow())) {
             return TRUE;
         }
     }
