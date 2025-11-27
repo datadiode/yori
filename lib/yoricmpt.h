@@ -10408,6 +10408,18 @@ ENUM_DISPLAY_MONITORS(HDC, LPRECT, PYORIMONITORENUMPROC, LPARAM);
 typedef ENUM_DISPLAY_MONITORS *PENUM_DISPLAY_MONITORS;
 
 /**
+ A prototype for the EnumWindows function.
+ */
+typedef
+BOOL WINAPI
+ENUM_WINDOWS(WNDENUMPROC, LPARAM);
+
+/**
+ A prototype for a pointer to the EnumWindows function.
+ */
+typedef ENUM_WINDOWS *PENUM_WINDOWS;
+
+/**
  A prototype for the ExitWindowsEx function.
  */
 typedef
@@ -10562,6 +10574,18 @@ GET_WINDOW_RECT(HWND, LPRECT);
  A prototype for a pointer to the GetWindowRect function.
  */
 typedef GET_WINDOW_RECT *PGET_WINDOW_RECT;
+
+/**
+ A prototype for the GetWindowTextW function.
+ */
+typedef
+int WINAPI
+GET_WINDOW_TEXTW(HWND, LPWSTR, int);
+
+/**
+ A prototype for a pointer to the GetWindowTextW function.
+ */
+typedef GET_WINDOW_TEXTW *PGET_WINDOW_TEXTW;
 
 /**
  A prototype for the GetWindowThreadProcessId function.
@@ -10896,6 +10920,11 @@ typedef struct _YORI_USER32_FUNCTIONS {
     PENUM_DISPLAY_MONITORS pEnumDisplayMonitors;
 
     /**
+     If it's available on the current system, a pointer to EnumWindows.
+     */
+    PENUM_WINDOWS pEnumWindows;
+
+    /**
      If it's available on the current system, a pointer to ExitWindowsEx.
      */
     PEXIT_WINDOWS_EX pExitWindowsEx;
@@ -10909,6 +10938,11 @@ typedef struct _YORI_USER32_FUNCTIONS {
      If it's available on the current system, a pointer to FindWindowExW.
      */
     PFIND_WINDOW_EXW pFindWindowExW;
+
+    /**
+     If it's available on the current system, a pointer to GetClassNameW.
+     */
+    PGET_WINDOW_TEXTW pGetClassNameW;
 
     /**
      If it's available on the current system, a pointer to GetClientRect.
@@ -10959,6 +10993,11 @@ typedef struct _YORI_USER32_FUNCTIONS {
      If it's available on the current system, a pointer to GetWindowRect.
      */
     PGET_WINDOW_RECT pGetWindowRect;
+
+    /**
+     If it's available on the current system, a pointer to GetWindowTextW.
+     */
+    PGET_WINDOW_TEXTW pGetWindowTextW;
 
     /**
      If it's available on the current system, a pointer to GetWindowThreadProcessId.

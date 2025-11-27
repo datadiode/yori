@@ -26,6 +26,7 @@
 
 #include <yoripch.h>
 #include <yorilib.h>
+#include <remimu.hxx>
 
 /**
  Help text to display to the user.
@@ -35,7 +36,16 @@ CHAR strWinInfoHelpText[] =
         "\n"
         "Return information about a window.\n"
         "\n"
-        "WININFO [-license] [-f <fmt>] [-t <title>]\n"
+        "WININFO [-license] [-f <fmt>] [-c <class>] [-d] [-b <id>] [-p]\n"
+        "        [[-i] [-e] -t <title>]\n"
+        "\n"
+        "   -c <class>     Look for a window of the given class\n"
+        "   -d             Look for a dialog window\n"
+        "   -t <title>     Look for a window with the given title\n"
+        "   -i             Match title case insensitively\n"
+        "   -e             Perform regex match\n"
+        "   -b <id>        Operate the button with the specified id\n"
+        "   -p             Paste the clipboarded content of the window\n"
         "\n"
         "Format specifiers are:\n"
         "   $left$         The offset from the left of the screen to the window\n"
@@ -71,7 +81,114 @@ typedef struct _WININFO_CONTEXT {
      The coordinates of the window.
      */
     RECT WindowRect;
+
+    /**
+     The title of the window.
+     */
+    PYORI_STRING WindowClass;
+
+    /**
+     The title of the window.
+     */
+    PYORI_STRING WindowTitle;
+
+    /**
+     TRUE if any text matching should be case insensitive.  If FALSE, text
+     matching is case sensitive."
+     */
+    BOOLEAN CaseInsensitive;
+
+    /**
+     TRUE if a regex match should be performed.
+     */
+    BOOL RegexMatch;
+
+    /**
+     Encoding to use.
+     */
+    DWORD EncodingToUse;
+
+    /**
+     Regex tokens.
+     */
+    RegexToken tokens[1024];
+    int16_t token_count;
+
 } WININFO_CONTEXT, *PWININFO_CONTEXT;
+
+/**
+ A callback invoked for every window on the desktop.  Each window is checked
+ to see if it matches the search criteria.
+
+ @param hWnd Pointer to a window on the desktop.
+
+ @param lParam Application defined context, in this case a pointer to the
+        application context.
+
+ @return TRUE to continue enumerating, or FALSE to stop enumerating.
+ */
+BOOL WINAPI
+WinInfoWindowFound(
+    __in HWND hWnd,
+    __in LPARAM lParam
+    )
+{
+    PWININFO_CONTEXT WinInfoContext = (PWININFO_CONTEXT)lParam;
+    YORI_STRING WindowTitle;
+    WCHAR Buffer[1024];
+
+    YoriLibInitEmptyString(&WindowTitle);
+    WindowTitle.StartOfString = Buffer;
+
+    if (WinInfoContext->WindowClass) {
+        WindowTitle.LengthInChars = DllUser32.pGetClassNameW(hWnd, Buffer, sizeof(Buffer)/sizeof(Buffer[0]));
+        if (YoriLibCompareStringIns(&WindowTitle, WinInfoContext->WindowClass) != 0) {
+            return TRUE;
+        }
+    }
+
+    if (WinInfoContext->WindowTitle) {
+        BOOL MatchFound = FALSE;
+        WindowTitle.LengthInChars = DllUser32.pGetWindowTextW(hWnd, Buffer, sizeof(Buffer)/sizeof(Buffer[0]));
+        if (WinInfoContext->RegexMatch) {
+            int offset = 0;
+            const int cbtext = WideCharToMultiByte(WinInfoContext->EncodingToUse, 0, WindowTitle.StartOfString, WindowTitle.LengthInChars, NULL, 0, NULL, NULL);
+            char *text = (char *)_alloca(cbtext + 1);
+            if (WinInfoContext->CaseInsensitive && DllUser32.pCharLowerBuffW) {
+                DllUser32.pCharLowerBuffW(WindowTitle.StartOfString, WindowTitle.LengthInChars);
+            }
+            WideCharToMultiByte(WinInfoContext->EncodingToUse, 0, WindowTitle.StartOfString, WindowTitle.LengthInChars, text, cbtext, NULL, NULL);
+            text[cbtext] = '\0';
+            while (offset <= cbtext) {
+                int length;
+                if ((text[offset] & '\xC0') == '\x80') {
+                    ++offset;
+                    continue;
+                }
+                length = (int)regex_match(WinInfoContext->tokens, text, offset, 0, NULL, NULL);
+                if (length >= 0) {
+                    MatchFound = TRUE;
+                    break;
+                }
+                ++offset;
+            }
+        } else if (WinInfoContext->CaseInsensitive) {
+            if (YoriLibCompareStringIns(&WindowTitle, WinInfoContext->WindowTitle) == 0) {
+                MatchFound = TRUE;
+            }
+        } else {
+            if (YoriLibCompareString(&WindowTitle, WinInfoContext->WindowTitle) == 0) {
+                MatchFound = TRUE;
+            }
+        }
+        if (!MatchFound) {
+            return TRUE;
+        }
+    }
+
+    WinInfoContext->Window = hWnd;
+    return FALSE;
+}
 
 /**
  A callback function to expand any known variables found when parsing the
@@ -159,18 +276,24 @@ ENTRYPOINT(
     )
 {
     BOOLEAN ArgumentUnderstood;
+    BOOLEAN ClipboardedText = FALSE;
+    DWORD ButtonId = 0;
+    YORI_MAX_SIGNED_T Temp;
+    YORI_ALLOC_SIZE_T CharsConsumed;
     YORI_ALLOC_SIZE_T StartArg = 0;
     YORI_ALLOC_SIZE_T i;
     YORI_STRING Arg;
-    PYORI_STRING WindowTitle = NULL;
+    YORI_STRING DialogClass;
     YORI_STRING DisplayString;
     WININFO_CONTEXT Context;
-    LPTSTR FormatString = _T("Position: $left$*$top$\n")
-                          _T("Size:     $width$*$height$\n");
+    LPCTSTR FormatString = _T("Position: $left$*$top$\n")
+                           _T("Size:     $width$*$height$\n");
     YORI_STRING YsFormatString;
 
     YoriLibInitEmptyString(&YsFormatString);
     ZeroMemory(&Context, sizeof(Context));
+    Context.EncodingToUse = YoriLibGetUsableEncoding();
+    YoriLibConstantString(&DialogClass, _T("#32770"));
 
     for (i = 1; i < ArgC; i++) {
 
@@ -192,9 +315,35 @@ ENTRYPOINT(
                     ArgumentUnderstood = TRUE;
                     i++;
                 }
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("b")) == 0) {
+                if (ArgC >= i + 1) {
+                    if (YoriLibStringToNumber(&ArgV[i + 1], TRUE, &Temp, &CharsConsumed)) {
+                        ButtonId = (DWORD)Temp;
+                        ArgumentUnderstood = TRUE;
+                        i++;
+                    }
+                }
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("p")) == 0) {
+                ClipboardedText = TRUE;
+                ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("c")) == 0) {
+                if (ArgC >= i + 1) {
+                    Context.WindowClass = &ArgV[i + 1];
+                    ArgumentUnderstood = TRUE;
+                    i++;
+                }
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("d")) == 0) {
+                Context.WindowClass = &DialogClass;
+                ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("i")) == 0) {
+                Context.CaseInsensitive = TRUE;
+                ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("e")) == 0) {
+                Context.RegexMatch = TRUE;
+                ArgumentUnderstood = TRUE;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("t")) == 0) {
                 if (ArgC >= i + 1) {
-                    WindowTitle = &ArgV[i + 1];
+                    Context.WindowTitle = &ArgV[i + 1];
                     ArgumentUnderstood = TRUE;
                     i++;
                 }
@@ -212,13 +361,52 @@ ENTRYPOINT(
 
     YoriLibLoadUser32Functions();
 
-    if (WindowTitle != NULL) {
-        if (DllUser32.pFindWindowW == NULL) {
+    if (Context.WindowTitle != NULL) {
+        if (Context.RegexMatch) {
+            int cbpattern = WideCharToMultiByte(Context.EncodingToUse, 0, Context.WindowTitle->StartOfString, Context.WindowTitle->LengthInChars, NULL, 0, NULL, NULL);
+            char* pattern = _alloca(cbpattern + 1);
+
+            if (Context.CaseInsensitive)
+            {
+                if (DllUser32.pCharLowerBuffW)
+                {
+                    YORI_ALLOC_SIZE_T Index;
+                    BOOL Escaped = FALSE;
+
+                    for (Index = 0; Index < Context.WindowTitle->LengthInChars; ++Index)
+                    {
+                        if (Escaped)
+                        {
+                            Escaped = FALSE;
+                        }
+                        else if (Context.WindowTitle->StartOfString[Index] == '\\')
+                        {
+                            Escaped = TRUE;
+                        }
+                        else
+                        {
+                            DllUser32.pCharLowerBuffW(Context.WindowTitle->StartOfString + Index, 1);
+                        }
+                    }
+                }
+            }
+
+            WideCharToMultiByte(Context.EncodingToUse, 0, Context.WindowTitle->StartOfString, Context.WindowTitle->LengthInChars, pattern, cbpattern, NULL, NULL);
+            pattern[cbpattern] = '\0';
+            Context.token_count = 1024;
+            if (regex_parse(pattern, Context.tokens, &Context.token_count, 0) != 0) {
+                YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: invalid regex\n"));
+                return EXIT_FAILURE;
+            }
+        }
+
+        if (DllUser32.pEnumWindows == NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: operating system support not present\n"));
             return EXIT_FAILURE;
         }
 
-        Context.Window = DllUser32.pFindWindowW(NULL, WindowTitle->StartOfString);
+        DllUser32.pEnumWindows(WinInfoWindowFound, (LPARAM)&Context);
+
         if (Context.Window == NULL) {
             YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: window not found\n"));
             return EXIT_FAILURE;
@@ -238,15 +426,36 @@ ENTRYPOINT(
         }
     }
 
-
     YoriLibInitEmptyString(&DisplayString);
-    if (YsFormatString.StartOfString == NULL) {
-        YoriLibConstantString(&YsFormatString, FormatString);
+    if (ClipboardedText) {
+        if (!YoriLibCopyText(&DisplayString)) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: could not clear clipboard\n"));
+            return EXIT_FAILURE;
+        }
+        if (!DllUser32.pSendMessageTimeoutW(Context.Window, WM_COPY, 0, 0, SMTO_NORMAL, 200, NULL)) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: window did not respond to WM_COPY\n"));
+            return EXIT_FAILURE;
+        }
+        if (!YoriLibPasteText(&DisplayString)) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: could not read clipboard\n"));
+            return EXIT_FAILURE;
+        }
+    } else {
+        if (YsFormatString.StartOfString == NULL) {
+            YoriLibConstantString(&YsFormatString, FormatString);
+        }
+        YoriLibExpandCommandVariables(&YsFormatString, '$', WinInfoExpandVariables, &Context, &DisplayString);
     }
-    YoriLibExpandCommandVariables(&YsFormatString, '$', WinInfoExpandVariables, &Context, &DisplayString);
     if (DisplayString.StartOfString != NULL) {
         YoriLibOutput(YORI_LIB_OUTPUT_STDOUT, _T("%y"), &DisplayString);
         YoriLibFreeStringContents(&DisplayString);
+    }
+
+    if (ButtonId) {
+        if (!DllUser32.pSendMessageTimeoutW(Context.Window, WM_COMMAND, ButtonId, 0, SMTO_NORMAL, 200, NULL)) {
+            YoriLibOutput(YORI_LIB_OUTPUT_STDERR, _T("wininfo: window did not respond to WM_COMMAND\n"));
+            return EXIT_FAILURE;
+        }
     }
 
     return EXIT_SUCCESS;
