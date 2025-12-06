@@ -99,6 +99,8 @@ YoriLibGetUsableEncoding(VOID)
  Attempt to open the clipboard with some retries in case it is currently in
  use.
 
+ @note https://stackoverflow.com/questions/66475791 suggests docs are wrong.
+
  @return TRUE to indicate success, FALSE to indicate failure.
  */
 BOOLEAN
@@ -759,7 +761,8 @@ YoriLibIsSystemClipboardAvailable(VOID)
 {
     YoriLibLoadUser32Functions();
 
-    if (DllUser32.pOpenClipboard == NULL ||
+    if (DllUser32.pGetDesktopWindow == NULL ||
+        DllUser32.pOpenClipboard == NULL ||
         DllUser32.pEmptyClipboard == NULL ||
         DllUser32.pGetClipboardData == NULL ||
         DllUser32.pSetClipboardData == NULL ||
