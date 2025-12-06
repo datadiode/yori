@@ -402,7 +402,7 @@ YoriLibUpdateBinaryFromUrlWinInet(
                                     0);
 
     if (hInternet == NULL) {
-        DWORD LastError;
+        SYSERR LastError;
         LastError = GetLastError();
 
         //

@@ -1749,7 +1749,7 @@ YoriLibShCheckForDeviceNameAndDuplicate(
         memcpy(ResolvedName, &UserName, sizeof(YORI_STRING));
 
     } else {
-        return YoriLibUserStringToSingleFilePath(&UserName, TRUE, ResolvedName);
+        return YoriLibUserToSingleFilePath(&UserName, TRUE, ResolvedName);
     }
     return TRUE;
 }

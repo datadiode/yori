@@ -47,6 +47,11 @@
  */
 typedef DWORD SYSERR;
 
+/**
+ Pointer to OS error type.
+ */
+typedef SYSERR * PSYSERR;
+
 #ifndef FILE_SHARE_DELETE
 /**
  Definition for share delete for compilers that don't contain it.
@@ -3940,6 +3945,29 @@ typedef struct _YORI_CONSOLE_SCREEN_BUFFER_INFOEX {
      */
     DWORD ColorTable[16];
 } YORI_CONSOLE_SCREEN_BUFFER_INFOEX, *PYORI_CONSOLE_SCREEN_BUFFER_INFOEX;
+
+#ifndef JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO
+
+/**
+ A definition for no more active processes within the job object for
+ compilation environments that do not provide it.
+ */
+#define JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO (4)
+
+/**
+ A definition for basic job object limits for compilation environments
+ that do not provide it.
+ */
+#define JobObjectBasicLimitInformation (2)
+
+/**
+ A definition for associating completion port messages with a job object
+ for compilation environments that do not provide it.
+ */
+#define JobObjectAssociateCompletionPortInformation (7)
+
+#endif
+
 
 /**
  Structure to change basic accounting information about a job.
