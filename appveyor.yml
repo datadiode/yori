@@ -1,4 +1,6 @@
 environment:
+  PATH: C:\yori-bin;$(PATH)
+
   matrix:
     - job_name: x86
       platform: x86
@@ -40,19 +42,18 @@ build_script:
   - for %%x in (out\*.ini out\*.cab) do perc.exe -a %%x -t 10 -i @%%~nxx "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe"
   - for /d %%d in (out\*) do copy /y "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe" %%d\ysetup.exe
   - for /d %%d in (out\*) do oscdimg %%d "%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.iso"
+  - '"%APPVEYOR_BUILD_FOLDER%\ysetup-%VERSION%-%PLATFORM:X=x%.exe" -complete "C:\yori-bin"'
 
 test_script:
   - type "%APPVEYOR_BUILD_FOLDER%\test\yoritest.xml"
-  - ps: |
-      $wc = New-Object 'System.Net.WebClient'
-      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
-  - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-extra-win32.cab" -C %WINDIR% ystrcmp.exe
+  - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
   - C:/msys64/usr/bin/wget -nv -O "%APPVEYOR_BUILD_FOLDER%\test\testinput1" https://github.com/PCRE2Project/pcre2/raw/refs/tags/pcre2-10.47/testdata/testinput1
   - cscript "%APPVEYOR_BUILD_FOLDER%\test\pcretest.vbs" //nologo /ystrcmp:ystrcmp.exe "%APPVEYOR_BUILD_FOLDER%\test\testinput1" > "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
   - type "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
-  - ps: |
-      $wc = New-Object 'System.Net.WebClient'
-      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
+  - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
+  - yori -c ys "%APPVEYOR_BUILD_FOLDER%\test\wininfo_auto_ignore_assert.cpp"
+  - type "%APPVEYOR_BUILD_FOLDER%\test\wininfo_auto_ignore_assert.xml"
+  - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\wininfo_auto_ignore_assert.xml")
 
 for:
 -
@@ -62,27 +63,20 @@ for:
 
   test_script:
     - type "%APPVEYOR_BUILD_FOLDER%\test\yoritest.xml"
-    - ps: |
-        $wc = New-Object 'System.Net.WebClient'
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
-    - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-extra-amd64.cab" -C %WINDIR% ystrcmp.exe
+    - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\yoritest.xml")
     - C:/msys64/usr/bin/wget -nv -O "%APPVEYOR_BUILD_FOLDER%\test\testinput1" https://github.com/PCRE2Project/pcre2/raw/refs/tags/pcre2-10.47/testdata/testinput1
     - cscript "%APPVEYOR_BUILD_FOLDER%\test\pcretest.vbs" //nologo /ystrcmp:ystrcmp.exe "%APPVEYOR_BUILD_FOLDER%\test\testinput1" > "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
     - type "%APPVEYOR_BUILD_FOLDER%\test\pcretest.xml"
-    - ps: |
-        $wc = New-Object 'System.Net.WebClient'
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
-    - bsdtar -xf "%APPVEYOR_BUILD_FOLDER%\yori-typical-amd64.cab" -C %WINDIR% timethis.exe
-    - timethis -r C:/msys64/mingw32.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
+    - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\pcretest.xml")
+    - timethis -r C:/msys64/mingw32.exe yori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
     - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.xml"
-    - ps: |
-        $wc = New-Object 'System.Net.WebClient'
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
-    - timethis -r C:/msys64/mingw64.exe oneyori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
+    - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
+    - timethis -r C:/msys64/mingw64.exe yori -c ys "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.cpp"
     - type "%APPVEYOR_BUILD_FOLDER%\test\my_regex_tests.xml"
-    - ps: |
-        $wc = New-Object 'System.Net.WebClient'
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
+    - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\my_regex_tests.xml")
+    - yori -c ys "%APPVEYOR_BUILD_FOLDER%\test\wininfo_auto_ignore_assert.cpp"
+    - type "%APPVEYOR_BUILD_FOLDER%\test\wininfo_auto_ignore_assert.xml"
+    - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($Env:APPVEYOR_JOB_ID)", "$Env:APPVEYOR_BUILD_FOLDER\test\wininfo_auto_ignore_assert.xml")
 
 # https://stackoverflow.com/questions/3790454/how-do-i-break-a-string-in-yaml-over-multiple-lines
 deploy:
