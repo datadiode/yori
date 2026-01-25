@@ -162,6 +162,7 @@ DIRS2=iconv      \
       sdir       \
       setver     \
       shutdn     \
+      signer     \
       sleep      \
       slmenu     \
       speak      \

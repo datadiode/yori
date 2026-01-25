@@ -47,6 +47,7 @@
 ..\scut\scut.exe|scut.exe
 ..\sdir\sdir.exe|sdir.exe
 ..\setver\setver.exe|setver.exe
+..\signer\ysigner.exe|ysigner.exe
 ..\slmenu\slmenu.exe|slmenu.exe
 ..\sponge\ysponge.exe|ysponge.exe
 ..\sync\sync.exe|sync.exe

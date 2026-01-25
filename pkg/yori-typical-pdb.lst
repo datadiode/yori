@@ -47,6 +47,7 @@
 ..\scut\scut.pdb|scut.pdb
 ..\sdir\sdir.pdb|sdir.pdb
 ..\setver\setver.pdb|setver.pdb
+..\signer\ysigner.pdb|ysigner.pdb
 ..\slmenu\slmenu.pdb|slmenu.pdb
 ..\sponge\ysponge.pdb|ysponge.pdb
 ..\sync\sync.pdb|sync.pdb
