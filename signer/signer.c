@@ -38,9 +38,10 @@ const CHAR strSignerHelpText[] =
     "\n"
     "Sign files for exclusive use on the executing machine.\n"
     "\n"
-    "SIGNER [-license] [-s] <file>...\n"
+    "SIGNER [-license] [-s] [-t] <file>...\n"
     "\n"
-    "   -s             Process files from all subdirectories\n";
+    "   -s             Process files from all subdirectories\n"
+    "   -t             Add certificate to TrustedPublisher store\n";
 
 /**
  Display usage text to the user.
@@ -363,6 +364,7 @@ ENTRYPOINT(
     WORD MatchFlags;
     BOOLEAN Recursive = FALSE;
     BOOLEAN BasicEnumeration = FALSE;
+    BOOLEAN TrustedPublisher = FALSE;
     YSIGNER_CONTEXT SignerContext;
     YORI_STRING Arg;
 
@@ -405,6 +407,9 @@ ENTRYPOINT(
                 return EXIT_SUCCESS;
             } else if (YoriLibCompareStringLitIns(&Arg, _T("s")) == 0) {
                 Recursive = TRUE;
+                ArgumentUnderstood = TRUE;
+            } else if (YoriLibCompareStringLitIns(&Arg, _T("t")) == 0) {
+                TrustedPublisher = TRUE;
                 ArgumentUnderstood = TRUE;
             }
         } else {
@@ -497,6 +502,16 @@ ENTRYPOINT(
     }
 
     if (SignerContext.pCertContext != NULL) {
+
+        if (TrustedPublisher) {
+            HANDLE hStore2 = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, 0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
+            if (hStore2 != NULL) {
+                CertAddCertificateContextToStore(hStore2, SignerContext.pCertContext, CERT_STORE_ADD_REPLACE_EXISTING, 0);
+                CertCloseStore(hStore2, 0);
+            } else {
+                OutputLastError(_T("Opening TrustedPublisher certificate store failed: %s"));
+            }
+        }
 
         for (i = StartArg; i < ArgC; i++) {
             SignerContext.FilesFoundThisArg = 0;
